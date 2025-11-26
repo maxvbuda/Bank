@@ -1,0 +1,1364 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --red-diamond: #dc143c;
+    --dark-red: #8b0000;
+    --light-red: #ff6b6b;
+    --gold: #ffd700;
+    --dark-bg: #1a1a2e;
+    --card-bg: #16213e;
+    --text-light: #eee;
+    --text-dark: #333;
+    --success: #4caf50;
+    --error: #f44336;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, var(--dark-bg) 0%, #0f3460 100%);
+    min-height: 100vh;
+    color: var(--text-light);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: var(--card-bg);
+    border-radius: 10px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.logo .diamond {
+    font-size: 48px;
+    color: var(--red-diamond);
+    text-shadow: 0 0 20px rgba(220, 20, 60, 0.8);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+.logo h1 {
+    font-size: 28px;
+    background: linear-gradient(135deg, var(--red-diamond), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 18px;
+}
+
+/* Auth Section */
+.auth-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+}
+
+.auth-container {
+    background: var(--card-bg);
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+    width: 100%;
+    max-width: 450px;
+}
+
+.auth-container h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: var(--red-diamond);
+}
+
+.tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.tab {
+    flex: 1;
+    padding: 12px;
+    background: transparent;
+    border: 2px solid var(--red-diamond);
+    color: var(--text-light);
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.tab.active {
+    background: var(--red-diamond);
+    color: white;
+}
+
+.tab:hover:not(.active) {
+    background: rgba(220, 20, 60, 0.2);
+}
+
+/* Forms */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-light);
+    font-weight: 500;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(220, 20, 60, 0.3);
+    border-radius: 8px;
+    color: var(--text-light);
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--red-diamond);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Buttons */
+.btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, var(--red-diamond), var(--dark-red));
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(220, 20, 60, 0.4);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-logout {
+    padding: 8px 20px;
+    background: transparent;
+    border: 2px solid var(--red-diamond);
+    color: var(--text-light);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-logout:hover {
+    background: var(--red-diamond);
+    color: white;
+}
+
+.btn-change-password {
+    padding: 8px 20px;
+    background: transparent;
+    border: 2px solid var(--gold);
+    color: var(--gold);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-change-password:hover {
+    background: var(--gold);
+    color: var(--dark-bg);
+}
+
+.btn-shop {
+    padding: 8px 20px;
+    background: linear-gradient(135deg, var(--red-diamond), #ff1744);
+    border: 2px solid var(--red-diamond);
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: bold;
+}
+
+.btn-shop:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(220, 20, 60, 0.4);
+}
+
+.btn-test-mode {
+    padding: 8px 20px;
+    background: rgba(128, 128, 128, 0.2);
+    border: 2px solid #888;
+    color: #888;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: bold;
+}
+
+.btn-test-mode.active {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    border-color: #4CAF50;
+    color: white;
+}
+
+.btn-test-mode:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(128, 128, 128, 0.3);
+}
+
+.btn-test-mode.active:hover {
+    box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
+}
+
+.btn-delete {
+    padding: 8px 20px;
+    background: transparent;
+    border: 2px solid var(--error);
+    color: var(--error);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-delete:hover {
+    background: var(--error);
+    color: white;
+}
+
+/* Dashboard */
+.dashboard {
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Balance Card */
+.balance-card {
+    background: linear-gradient(135deg, var(--red-diamond), var(--dark-red));
+    padding: 40px;
+    border-radius: 15px;
+    text-align: center;
+    margin-bottom: 30px;
+    box-shadow: 0 8px 16px rgba(220, 20, 60, 0.3), 0 0 40px rgba(255, 215, 0, 0.2);
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0%, 100% {
+        box-shadow: 0 8px 16px rgba(220, 20, 60, 0.3), 0 0 40px rgba(255, 215, 0, 0.2);
+    }
+    50% {
+        box-shadow: 0 8px 16px rgba(220, 20, 60, 0.5), 0 0 60px rgba(255, 215, 0, 0.4);
+    }
+}
+
+.balance-card h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+    opacity: 0.9;
+}
+
+.balance-amount {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    font-size: 48px;
+    font-weight: bold;
+    text-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+}
+
+.diamond-icon {
+    font-size: 60px;
+    animation: rotate 4s linear infinite;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.currency {
+    font-size: 24px;
+    opacity: 0.9;
+}
+
+/* Actions Grid */
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.action-card {
+    background: var(--card-bg);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(220, 20, 60, 0.2);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.action-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--red-diamond);
+}
+
+.action-card h3 {
+    color: var(--red-diamond);
+    margin-bottom: 20px;
+    font-size: 22px;
+}
+
+/* Game Card */
+.game-card {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, rgba(220, 20, 60, 0.1), rgba(139, 0, 0, 0.1));
+    border: 2px solid var(--red-diamond);
+}
+
+.game-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.game-info {
+    text-align: center;
+}
+
+.game-info p {
+    margin-bottom: 15px;
+    font-size: 16px;
+    opacity: 0.9;
+}
+
+.game-stats {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    font-size: 14px;
+}
+
+.game-stats strong {
+    color: var(--gold);
+}
+
+.game-board {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    height: 400px;
+    margin: 0 auto;
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.8), rgba(15, 52, 96, 0.8));
+    border: 2px solid rgba(220, 20, 60, 0.3);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* Diamond Heist Game Styles */
+.heist-game-board {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    height: 600px;
+    margin: 20px auto 0;
+    background: radial-gradient(circle at center, #0f0f1f 0%, #0a0a1a 100%);
+    border: 3px solid var(--red-diamond);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 30px rgba(220, 20, 60, 0.4), inset 0 0 50px rgba(0, 0, 0, 0.8);
+}
+
+.heist-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--text-light);
+    font-size: 18px;
+    text-align: center;
+    z-index: 100;
+}
+
+.heist-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-rows: repeat(10, 1fr);
+    gap: 2px;
+    padding: 10px;
+}
+
+.heist-cell {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+    position: relative;
+    transition: background 0.2s;
+}
+
+.heist-player {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    z-index: 50;
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
+    animation: playerPulse 1s ease-in-out infinite;
+    transition: all 0.1s ease;
+}
+
+.player-dashing {
+    animation: dashEffect 0.3s ease-out;
+    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 1)) !important;
+}
+
+@keyframes dashEffect {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.5); }
+    100% { transform: scale(1); }
+}
+
+@keyframes playerPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.heist-diamond {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: var(--red-diamond);
+    z-index: 10;
+    animation: diamondSpin 2s linear infinite;
+}
+
+@keyframes diamondSpin {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.2); }
+    100% { transform: rotate(360deg) scale(1); }
+}
+
+.heist-powerup {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    z-index: 10;
+    animation: powerupFloat 1.5s ease-in-out infinite;
+}
+
+@keyframes powerupFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-8px) rotate(10deg); }
+}
+
+.heist-laser {
+    position: absolute;
+    background: linear-gradient(90deg, transparent, rgba(220, 20, 60, 0.9), rgba(255, 0, 0, 0.9), rgba(220, 20, 60, 0.9), transparent);
+    box-shadow: 0 0 15px rgba(220, 20, 60, 1), 0 0 30px rgba(220, 20, 60, 0.7);
+    z-index: 30;
+    animation: laserPulse 0.8s ease-in-out infinite;
+}
+
+.heist-laser.horizontal {
+    height: 4px;
+    width: 100%;
+    left: 0;
+}
+
+.heist-laser.vertical {
+    width: 4px;
+    height: 100%;
+    top: 0;
+}
+
+.heist-laser.danger {
+    background: linear-gradient(90deg, transparent, rgba(255, 0, 0, 1), transparent);
+    box-shadow: 0 0 20px rgba(255, 0, 0, 1), 0 0 40px rgba(255, 0, 0, 0.8);
+}
+
+@keyframes laserPulse {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
+}
+
+.heist-vault-door {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.2), transparent);
+    z-index: 10;
+    animation: vaultGlow 2s ease-in-out infinite;
+}
+
+@keyframes vaultGlow {
+    0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8); }
+}
+
+.heist-controls {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.heist-control-info {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 10px;
+}
+
+.heist-powerups {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 10px;
+}
+
+.powerup-slot {
+    background: rgba(220, 20, 60, 0.1);
+    padding: 8px 15px;
+    border-radius: 8px;
+    border: 1px solid rgba(220, 20, 60, 0.3);
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.heist-particle {
+    position: absolute;
+    font-size: 16px;
+    pointer-events: none;
+    z-index: 100;
+    animation: particleFade 1s ease-out forwards;
+}
+
+@keyframes particleFade {
+    0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(var(--tx), var(--ty)) scale(0.3);
+        opacity: 0;
+    }
+}
+
+.heist-screen-shake {
+    animation: screenShake 0.3s ease-in-out;
+}
+
+@keyframes screenShake {
+    0%, 100% { transform: translate(0, 0); }
+    25% { transform: translate(-5px, 5px); }
+    50% { transform: translate(5px, -5px); }
+    75% { transform: translate(-5px, -5px); }
+}
+
+.player-speed {
+    filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8)) !important;
+}
+
+.heist-combo-text {
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 48px;
+    font-weight: bold;
+    color: #FFD700;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 1), 0 0 40px rgba(255, 215, 0, 0.8);
+    z-index: 10000;
+    pointer-events: none;
+    animation: comboPopup 0.8s ease-out;
+}
+
+@keyframes comboPopup {
+    0% { transform: translateX(-50%) scale(0); opacity: 0; }
+    50% { transform: translateX(-50%) scale(1.3); opacity: 1; }
+    100% { transform: translateX(-50%) scale(1); opacity: 0; }
+}
+
+.achievement-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    border: 3px solid var(--gold);
+    border-radius: 15px;
+    padding: 20px 40px;
+    font-size: 24px;
+    color: var(--gold);
+    text-align: center;
+    z-index: 10000;
+    animation: achievementPop 2s ease-out;
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+}
+
+@keyframes achievementPop {
+    0% { transform: translate(-50%, -50%) scale(0) rotate(-180deg); opacity: 0; }
+    50% { transform: translate(-50%, -50%) scale(1.2) rotate(10deg); opacity: 1; }
+    80% { transform: translate(-50%, -50%) scale(1) rotate(-5deg); }
+    100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 0; }
+}
+
+.race-track {
+.player-speed {
+    filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8)) !important;
+}
+
+.race-track {
+    position: absolute;
+    width: 60%;
+    height: 100%;
+    left: 20%;
+    background: #2a2a3e;
+    border-left: 3px dashed rgba(255, 255, 255, 0.5);
+    border-right: 3px dashed rgba(255, 255, 255, 0.5);
+}
+
+.race-track-container {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    height: 400px;
+    margin: 20px auto 0;
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.8), rgba(15, 52, 96, 0.8));
+    border: 2px solid rgba(220, 20, 60, 0.3);
+    border-radius: 12px;
+    overflow: visible;
+}
+
+.race-view-container {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    height: 450px;
+    margin: 20px auto 0;
+    background: linear-to-bottom;
+    border: 4px solid rgba(220, 20, 60, 0.5);
+    border-radius: 15px;
+    overflow: hidden;
+    perspective: 400px;
+    perspective-origin: 50% 30%;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.race-sky {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 45%;
+    background: linear-gradient(to bottom, #4A90E2 0%, #7BB8FF 50%, #B8D8FF 100%);
+    z-index: 0;
+}
+
+.race-clouds {
+    position: absolute;
+    top: 20%;
+    font-size: 40px;
+    animation: cloudsMove 30s linear infinite;
+    opacity: 0.7;
+}
+
+@keyframes cloudsMove {
+    from { transform: translateX(-100px); }
+    to { transform: translateX(700px); }
+}
+
+.race-horizon {
+    position: absolute;
+    top: 45%;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(to right, transparent, #FFD700, #FFA500, #FFD700, transparent);
+    z-index: 1;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+}
+
+.race-track-view {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 55%;
+    background: linear-gradient(to bottom, #4a4a4a 0%, #2a2a2a 100%);
+    overflow: hidden;
+    transform: rotateX(45deg);
+    transform-origin: 50% 0%;
+    transform-style: preserve-3d;
+}
+
+.road-stripes {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+}
+
+.road-stripe {
+    position: absolute;
+    background: white;
+    width: 8px;
+    border-radius: 2px;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+.road-edge {
+    position: absolute;
+    background: repeating-linear-gradient(
+        0deg,
+        #FF0000 0px,
+        #FF0000 20px,
+        #FFFFFF 20px,
+        #FFFFFF 40px
+    );
+    width: 15px;
+}
+
+.race-car-dashboard {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.dashboard-hood {
+    font-size: 100px;
+    filter: drop-shadow(0 -8px 15px rgba(0, 0, 0, 0.7));
+    animation: carBounce 0.5s ease-in-out infinite;
+}
+
+@keyframes carBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
+.speed-meter {
+    position: absolute;
+    bottom: 90px;
+    right: -150px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: 2px solid var(--red-diamond);
+    text-align: center;
+}
+
+.speed-label {
+    font-size: 10px;
+    color: #888;
+    margin-bottom: 5px;
+}
+
+.speed-value {
+    font-size: 32px;
+    font-weight: bold;
+    color: var(--red-diamond);
+    font-family: 'Courier New', monospace;
+}
+
+.speed-boost-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 48px;
+    font-weight: bold;
+    color: #FFD700;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.8),
+                 0 0 40px rgba(255, 215, 0, 0.6);
+    display: none;
+    z-index: 150;
+    animation: boostPulse 0.5s ease-in-out infinite;
+}
+
+.race-minimap {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid var(--red-diamond);
+    border-radius: 10px;
+    padding: 10px;
+    z-index: 100;
+}
+
+.minimap-title {
+    font-size: 10px;
+    color: #888;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.minimap-track {
+    width: 80px;
+    height: 80px;
+    border: 2px solid #444;
+    border-radius: 50%;
+    position: relative;
+    background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
+}
+
+.minimap-dot {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.minimap-dot.player {
+    background: var(--red-diamond);
+    box-shadow: 0 0 10px var(--red-diamond);
+    z-index: 10;
+}
+
+.minimap-dot.opponent {
+    background: #888;
+    width: 6px;
+    height: 6px;
+}
+
+@keyframes boostPulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.2); }
+}
+
+.race-item-view {
+    position: absolute;
+    font-size: 32px;
+    transition: all 0.05s linear;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
+    animation: itemFloat 1s ease-in-out infinite;
+}
+
+@keyframes itemFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-5px) rotate(5deg); }
+}
+
+.power-up-item {
+    animation: powerUpSpin 2s linear infinite, itemFloat 1s ease-in-out infinite;
+}
+
+@keyframes powerUpSpin {
+    from { filter: hue-rotate(0deg) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6)); }
+    to { filter: hue-rotate(360deg) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6)); }
+}
+
+.opponent-car {
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.8)) brightness(0.85);
+}
+
+.race-particle {
+    animation: fadeOut 1s ease-out;
+}
+
+@keyframes fadeOut {
+    from { 
+        opacity: 1;
+        transform: scale(1);
+    }
+    to { 
+        opacity: 0;
+        transform: scale(0.3);
+    }
+}
+
+.combo-text {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.race-track-svg {
+    width: 100%;
+    height: 100%;
+}
+
+.race-car {
+    position: absolute;
+    font-size: 32px;
+    transition: all 0.05s linear;
+    z-index: 10;
+    filter: drop-shadow(0 0 10px rgba(220, 20, 60, 0.5));
+    transform-origin: center;
+}
+
+.race-obstacle {
+    position: absolute;
+    font-size: 30px;
+    animation: raceMove 3s linear;
+}
+
+.race-diamond {
+    position: absolute;
+    font-size: 25px;
+    animation: raceMove 3s linear;
+}
+
+@keyframes raceMove {
+    from {
+        top: -50px;
+    }
+    to {
+        top: 450px;
+    }
+}
+
+.steering-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    padding: 20px;
+}
+
+.steering-wheel {
+    position: relative;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #1a1a2e 0%, #0f3460 70%, #000 100%);
+    border: 6px solid var(--red-diamond);
+    box-shadow: 
+        0 0 30px rgba(220, 20, 60, 0.6),
+        inset 0 0 30px rgba(0, 0, 0, 0.8),
+        inset 0 0 10px rgba(220, 20, 60, 0.3);
+    cursor: grab;
+    user-select: none;
+}
+
+.steering-wheel:active {
+    cursor: grabbing;
+    box-shadow: 
+        0 0 40px rgba(220, 20, 60, 0.8),
+        inset 0 0 30px rgba(0, 0, 0, 0.8),
+        inset 0 0 20px rgba(220, 20, 60, 0.5);
+}
+
+.steering-grip {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 24px;
+    filter: drop-shadow(0 0 5px rgba(255, 0, 0, 0.8));
+}
+
+.steering-grip.left {
+    left: 10px;
+}
+
+.steering-grip.right {
+    right: 10px;
+}
+
+.steering-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 40px;
+    opacity: 0.3;
+}
+
+.steering-indicator {
+    position: absolute;
+    width: 35px;
+    height: 35px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 28px;
+    transition: all 0.1s ease;
+    pointer-events: none;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 1));
+    z-index: 10;
+}
+
+.game-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    color: var(--red-diamond);
+    text-align: center;
+    font-weight: bold;
+}
+
+.falling-diamond {
+    position: absolute;
+    font-size: 48px;
+    cursor: pointer;
+    user-select: none;
+    z-index: 10;
+    will-change: transform;
+    line-height: 1;
+}
+
+.falling-diamond:hover {
+    filter: brightness(1.3);
+    cursor: pointer;
+}
+
+.falling-diamond.red {
+    color: var(--red-diamond);
+    text-shadow: 0 0 10px rgba(220, 20, 60, 0.8);
+}
+
+.falling-diamond.blue {
+    color: #4169e1;
+    text-shadow: 0 0 10px rgba(65, 105, 225, 0.8);
+}
+
+.falling-diamond.green {
+    color: #32cd32;
+    text-shadow: 0 0 10px rgba(50, 205, 50, 0.8);
+}
+
+.falling-diamond.gold {
+    color: var(--gold);
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+}
+
+.falling-diamond.caught {
+    animation: collect 0.5s ease forwards;
+}
+
+@keyframes fall {
+    0% {
+        transform: translateY(-50px);
+    }
+    100% {
+        transform: translateY(calc(400px + 50px));
+    }
+}
+
+@keyframes collect {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.5) rotate(180deg);
+    }
+    100% {
+        transform: scale(0) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+@keyframes floatUp {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+}
+
+.game-reward {
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--gold);
+    min-height: 30px;
+    animation: fadeIn 0.3s ease;
+}
+
+/* Transaction Section */
+.transaction-section {
+    background: var(--card-bg);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.transaction-section h2 {
+    color: var(--red-diamond);
+    margin-bottom: 20px;
+}
+
+.transaction-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.transaction-item {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border-left: 4px solid var(--red-diamond);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.transaction-item.deposit {
+    border-left-color: var(--success);
+}
+
+.transaction-item.withdraw {
+    border-left-color: var(--error);
+}
+
+.transaction-item.transfer-sent {
+    border-left-color: var(--light-red);
+}
+
+.transaction-item.transfer-received {
+    border-left-color: var(--gold);
+}
+
+.transaction-details {
+    flex: 1;
+}
+
+.transaction-type {
+    font-weight: bold;
+    color: var(--red-diamond);
+    text-transform: uppercase;
+    font-size: 14px;
+}
+
+.transaction-info {
+    color: var(--text-light);
+    opacity: 0.8;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.transaction-amount {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.transaction-amount.positive {
+    color: var(--success);
+}
+
+.transaction-amount.negative {
+    color: var(--error);
+}
+
+.no-transactions {
+    text-align: center;
+    padding: 40px;
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+}
+
+/* Notification */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transform: translateX(400px);
+    transition: transform 0.3s ease;
+    z-index: 1000;
+    max-width: 350px;
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification.success {
+    background: var(--success);
+    color: white;
+}
+
+.notification.error {
+    background: var(--error);
+    color: white;
+}
+
+.notification.info {
+    background: var(--red-diamond);
+    color: white;
+}
+
+/* Scrollbar Styling */
+.transaction-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.transaction-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.transaction-list::-webkit-scrollbar-thumb {
+    background: var(--red-diamond);
+    border-radius: 10px;
+}
+
+.transaction-list::-webkit-scrollbar-thumb:hover {
+    background: var(--light-red);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .actions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .logo h1 {
+        font-size: 20px;
+    }
+    
+    .balance-amount {
+        font-size: 32px;
+    }
+    
+    .diamond-icon {
+        font-size: 40px;
+    }
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    padding: 40px;
+    border-radius: 15px;
+    max-width: 450px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-content h2 {
+    color: var(--red-diamond);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.modal-content p {
+    text-align: center;
+    margin-bottom: 25px;
+    opacity: 0.9;
+}
+
+.btn-secondary {
+    flex: 1;
+    padding: 14px;
+    background: transparent;
+    border: 2px solid var(--red-diamond);
+    color: var(--text-light);
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: rgba(220, 20, 60, 0.2);
+}

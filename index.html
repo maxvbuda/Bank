@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Red Diamond Bank - Your Trusted Financial Partner</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <span class="diamond">◆</span>
+                <h1>Red Diamond Bank</h1>
+            </div>
+            <div class="user-info" id="userInfo">
+                <span id="userName">Guest</span>
+                <button class="btn-test-mode" id="testModeBtn" style="display: none;">🔧 Test Mode: OFF</button>
+                <button class="btn-shop" id="shopBtn" style="display: none;">💎 Shop</button>
+                <button class="btn-change-password" id="changePasswordBtn" style="display: none;">Change Password</button>
+                <button class="btn-logout" id="logoutBtn" style="display: none;">Logout</button>
+                <button class="btn-delete" id="deleteAccountBtn" style="display: none;">Delete Account</button>
+            </div>
+        </header>
+
+        <!-- Login/Register Section -->
+        <section class="auth-section" id="authSection">
+            <div class="auth-container">
+                <h2>Welcome to Red Diamond Bank</h2>
+                <div class="tabs">
+                    <button class="tab active" id="loginTab">Login</button>
+                    <button class="tab" id="registerTab">Register</button>
+                </div>
+                
+                <!-- Login Form -->
+                <form id="loginForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="loginUsername">Username</label>
+                        <input type="text" id="loginUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Login</button>
+                    <div style="text-align: center; margin-top: 15px;">
+                        <a href="#" id="forgotPasswordLink" style="color: var(--red-diamond); text-decoration: none; font-size: 14px;">Forgot Password?</a>
+                    </div>
+                </form>
+
+                <!-- Register Form -->
+                <form id="registerForm" class="auth-form" style="display: none;">
+                    <div class="form-group">
+                        <label for="registerUsername">Username</label>
+                        <input type="text" id="registerUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">Password</label>
+                        <input type="password" id="registerPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail">Email</label>
+                        <input type="email" id="registerEmail" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Register</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Banking Dashboard -->
+        <section class="dashboard" id="dashboard" style="display: none;">
+            <!-- Balance Card -->
+            <div class="balance-card">
+                <h2>Your Balance</h2>
+                <div class="balance-amount">
+                    <span class="diamond-icon">◆</span>
+                    <span id="balanceAmount">0</span>
+                    <span class="currency">Red Diamonds</span>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="actions-grid">
+                <div class="action-card game-card">
+                    <h3>💎 Diamond Rush</h3>
+                    <div class="game-container">
+                        <div class="game-info">
+                            <p>Catch falling diamonds! Click only RED ones! ◆</p>
+                            <div class="game-stats">
+                                <span>Score: <strong id="gameScore">0</strong></span>
+                                <span>Time: <strong id="gameTime">30</strong>s</span>
+                                <span>Best: <strong id="gameBest">0</strong></span>
+                            </div>
+                        </div>
+                        <button class="btn-primary" id="startGameBtn" style="max-width: 200px; margin: 0 auto;">🎮 Start Game</button>
+                        <div class="game-board" id="gameBoard">
+                            <div class="game-message">Click 'Start Game' to play!</div>
+                        </div>
+                        <div class="game-reward" id="gameReward"></div>
+                    </div>
+                </div>
+
+                <!-- Diamond Heist Game -->
+                <div class="action-card game-card">
+                    <h3>💎 Diamond Heist</h3>
+                    <div class="game-container">
+                        <div class="game-info">
+                            <p>Navigate through laser security to steal diamonds!</p>
+                            <div class="game-stats">
+                                <span>⏱️ Time: <strong id="heistTime">60</strong>s</span>
+                                <span>💎 Stolen: <strong id="heistDiamonds">0</strong></span>
+                                <span>🎯 Combo: <strong id="heistCombo">0</strong>x</span>
+                                <span>🔥 Streak: <strong id="heistStreak">0</strong></span>
+                            </div>
+                            <div class="game-stats">
+                                <span>🎮 Level: <strong id="heistLevel">1</strong></span>
+                                <span>💂 Guards: <strong id="guardCount">0</strong></span>
+                                <span>🏆 Best: <strong id="heistBest">0</strong></span>
+                                <span>⚡ Multiplier: <strong id="heistMultiplier">1</strong>x</span>
+                            </div>
+                        </div>
+                        <button class="btn-primary" id="startHeistBtn" style="max-width: 200px; margin: 0 auto;">🏦 Start Heist</button>
+                        <div class="heist-game-board" id="heistBoard">
+                            <div class="heist-message">Click 'Start Heist' to begin!</div>
+                        </div>
+                        <div class="heist-controls">
+                            <div class="heist-control-info">🎮 Arrow Keys/WASD: Move | Space: Dash | Shift: Sprint</div>
+                            <div class="heist-powerups" id="heistPowerups">
+                                <div class="powerup-slot">⚡ Dashes: <span id="dashCount">3</span></div>
+                                <div class="powerup-slot">🏃 Sprint: <span id="sprintEnergy">100</span>%</div>
+                                <div class="powerup-slot" id="activeEffect" style="display: none;"></div>
+                            </div>
+                        </div>
+                        <div class="game-reward" id="heistReward"></div>
+                    </div>
+                </div>
+
+                <div class="action-card">
+                    <h3>Withdraw</h3>
+                    <form id="withdrawForm">
+                        <div class="form-group">
+                            <label for="withdrawAmount">Amount</label>
+                            <input type="number" id="withdrawAmount" min="1" step="0.01" required>
+                        </div>
+                        <button type="submit" class="btn-primary">Withdraw ◆</button>
+                    </form>
+                </div>
+
+                <div class="action-card">
+                    <h3>Transfer</h3>
+                    <form id="transferForm">
+                        <div class="form-group">
+                            <label for="transferRecipient">Recipient Username</label>
+                            <input type="text" id="transferRecipient" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="transferAmount">Amount</label>
+                            <input type="number" id="transferAmount" min="1" step="0.01" required>
+                        </div>
+                        <button type="submit" class="btn-primary">Transfer ◆</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Transaction History -->
+            <div class="transaction-section">
+                <h2>Transaction History</h2>
+                <div class="transaction-list" id="transactionList">
+                    <p class="no-transactions">No transactions yet</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Notification Area -->
+        <div class="notification" id="notification"></div>
+        
+        <!-- Forgot Password Modal -->
+        <div class="modal" id="forgotPasswordModal" style="display: none;">
+            <div class="modal-content">
+                <h2>Reset Password</h2>
+                <p>Enter your username to receive a temporary password via email.</p>
+                <form id="forgotPasswordForm">
+                    <div class="form-group">
+                        <label for="resetUsername">Username</label>
+                        <input type="text" id="resetUsername" required>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="btn-primary">Send Password</button>
+                        <button type="button" class="btn-secondary" id="closeModalBtn">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Change Password Modal -->
+        <div class="modal" id="changePasswordModal" style="display: none;">
+            <div class="modal-content">
+                <h2>Change Password</h2>
+                <form id="changePasswordForm">
+                    <div class="form-group">
+                        <label for="currentPassword">Current Password</label>
+                        <input type="password" id="currentPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">New Password</label>
+                        <input type="password" id="newPassword" required minlength="4">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm New Password</label>
+                        <input type="password" id="confirmPassword" required minlength="4">
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="btn-primary">Change Password</button>
+                        <button type="button" class="btn-secondary" id="closeChangePasswordBtn">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Shop Modal -->
+        <div class="modal" id="shopModal" style="display: none;">
+            <div class="modal-content" style="max-width: 900px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>💎 Diamond Shop</h2>
+                    <button type="button" class="btn-secondary" id="closeShopBtn">Close</button>
+                </div>
+                <div class="shop-grid" id="shopGrid">
+                    <!-- Shop items will be dynamically loaded here -->
+                </div>
+                <div id="inventory" style="margin-top: 30px;">
+                    <h3>📦 Your Inventory</h3>
+                    <div id="inventoryGrid" class="inventory-grid">
+                        <p style="color: #888;">No items yet. Start shopping!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
