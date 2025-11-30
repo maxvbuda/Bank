@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -5,25 +6,63 @@ const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const path = require('path');
 const nodemailer = require('nodemailer');
+const https = require('https');
+const http = require('http');
+const fs = require('fs');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+const HTTPS_PORT = process.env.HTTPS_PORT || 3443;
+const USE_HTTPS = process.env.USE_HTTPS === 'true';
 
 // Email configuration
-// To use Gmail:
-// 1. Go to https://myaccount.google.com/apppasswords
-// 2. Create an app password for "Mail"
-// 3. Use that password below (not your regular Gmail password)
-//
-// Or use another email service like SendGrid, Mailgun, etc.
+// Configure email using environment variables in .env file
+// Supports Gmail, GoDaddy, Resend, and other SMTP services
 
-let transporter = nodemailer.createTransport({
-    service: 'gmail',  // Change to your email service (gmail, outlook, yahoo, etc.)
-    auth: {
-        user: 'YOUR_EMAIL@gmail.com',  // Replace with your email
-        pass: 'YOUR_APP_PASSWORD'       // Replace with your app password
+let transporter = null;
+if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    // Resend SMTP configuration
+    if (process.env.EMAIL_SERVICE === 'resend') {
+        transporter = nodemailer.createTransport({
+            host: process.env.EMAIL_HOST || 'smtp.resend.com',
+            port: parseInt(process.env.EMAIL_PORT) || 587,
+            secure: false, // Resend uses STARTTLS on port 587
+            auth: {
+                user: 'resend',
+                pass: process.env.EMAIL_PASS // Use Resend API key as password
+            }
+        });
+        console.log('Email service configured (Resend SMTP)');
     }
-});
+    // GoDaddy SMTP configuration
+    else if (process.env.EMAIL_SERVICE === 'godaddy' || process.env.EMAIL_HOST) {
+        transporter = nodemailer.createTransport({
+            host: process.env.EMAIL_HOST || 'smtpout.secureserver.net',
+            port: parseInt(process.env.EMAIL_PORT) || 465,
+            secure: (process.env.EMAIL_PORT === '465' || !process.env.EMAIL_PORT), // true for 465, false for other ports
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            },
+            tls: {
+                ciphers: 'SSLv3'
+            }
+        });
+        console.log('Email service configured (GoDaddy SMTP)');
+    } else {
+        // Gmail or other service-based configuration
+        transporter = nodemailer.createTransport({
+            service: process.env.EMAIL_SERVICE || 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+        console.log(`Email service configured (${process.env.EMAIL_SERVICE || 'gmail'})`);
+    }
+} else {
+    console.warn('Email service not configured. Set EMAIL_USER and EMAIL_PASS in .env file to enable email functionality.');
+}
 
 // Middleware
 app.use(cors());
@@ -458,10 +497,14 @@ app.delete('/api/delete-account', (req, res) => {
 
 // Reset password
 app.post('/api/reset-password', async (req, res) => {
-    const { username } = req.body;
+    const { username, email, newPassword } = req.body;
 
-    if (!username) {
-        return res.status(400).json({ error: 'Username required' });
+    if (!username || !email || !newPassword) {
+        return res.status(400).json({ error: 'Username, email, and new password are required' });
+    }
+
+    if (newPassword.length < 4) {
+        return res.status(400).json({ error: 'Password must be at least 4 characters' });
     }
 
     db.get('SELECT * FROM users WHERE username = ?', [username], async (err, user) => {
@@ -473,10 +516,14 @@ app.post('/api/reset-password', async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
+        // Verify email matches the account
+        if (user.email.toLowerCase() !== email.toLowerCase()) {
+            return res.status(400).json({ error: 'Email does not match the account' });
+        }
+
         try {
-            // Generate temporary password
-            const tempPassword = Math.random().toString(36).slice(-8);
-            const hashedPassword = await bcrypt.hash(tempPassword, 10);
+            // Hash the new password
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
 
             // Update user password
             db.run(
@@ -488,23 +535,23 @@ app.post('/api/reset-password', async (req, res) => {
                     }
 
                     console.log(`Password reset for user: ${username}`);
-                    console.log(`Sending email to: ${user.email}`);
+                    console.log(`Sending confirmation email to: ${user.email}`);
 
-                    // Send email with temporary password
+                    // Send confirmation email
+                    const fromEmail = process.env.EMAIL_SERVICE === 'resend' 
+                        ? process.env.EMAIL_USER 
+                        : (process.env.EMAIL_USER || 'Red Diamond Bank <noreply@reddiamondbank.com>');
                     const mailOptions = {
-                        from: process.env.EMAIL_USER || 'Red Diamond Bank <noreply@reddiamondbank.com>',
+                        from: fromEmail,
                         to: user.email,
-                        subject: 'Red Diamond Bank - Password Reset',
+                        subject: 'Red Diamond Bank - Password Reset Confirmation',
                         html: `
                             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                                 <h2 style="color: #dc143c;">🔴 Red Diamond Bank</h2>
-                                <h3>Password Reset Request</h3>
+                                <h3>Password Reset Confirmation</h3>
                                 <p>Hello ${username},</p>
-                                <p>Your temporary password is:</p>
-                                <div style="background: #f5f5f5; padding: 15px; border-left: 4px solid #dc143c; margin: 20px 0;">
-                                    <code style="font-size: 18px; font-weight: bold;">${tempPassword}</code>
-                                </div>
-                                <p>Please use this temporary password to log in, then change it immediately using the "Change Password" button in your dashboard.</p>
+                                <p>Your password has been successfully reset.</p>
+                                <p>You can now log in with your new password.</p>
                                 <p style="color: #666; font-size: 12px; margin-top: 30px;">
                                     If you did not request this password reset, please contact support immediately.
                                 </p>
@@ -512,19 +559,19 @@ app.post('/api/reset-password', async (req, res) => {
                         `
                     };
 
-                    try {
-                        const info = await transporter.sendMail(mailOptions);
-                        res.json({
-                            message: 'Password reset email sent successfully',
-                            email: user.email
-                        });
-                    } catch (emailError) {
-                        console.error('Email send failed:', emailError.message);
-                        res.json({
-                            message: 'Email service not configured. Temporary password: ' + tempPassword,
-                            tempPassword: tempPassword
-                        });
+                    if (transporter) {
+                        try {
+                            const info = await transporter.sendMail(mailOptions);
+                            console.log('Confirmation email sent successfully:', info.messageId);
+                        } catch (emailError) {
+                            console.error('Email send failed:', emailError.message);
+                            // Don't fail the request if email fails - password is already reset
+                        }
                     }
+
+                    res.json({
+                        message: 'Password reset successfully'
+                    });
                 }
             );
         } catch (error) {
@@ -725,11 +772,37 @@ app.post('/api/race-reward', (req, res) => {
     });
 });
 
-// Start server
-app.listen(PORT, () => {
+// Start HTTP server (always available)
+http.createServer(app).listen(PORT, () => {
     console.log(`🏦 Red Diamond Bank server running on http://localhost:${PORT}`);
     console.log(`💎 Currency: Red Diamonds ◆`);
 });
+
+// Start HTTPS server if certificates are provided
+if (USE_HTTPS) {
+    const sslKeyPath = process.env.SSL_KEY_PATH || './ssl/private.key';
+    const sslCertPath = process.env.SSL_CERT_PATH || './ssl/certificate.crt';
+    
+    try {
+        if (fs.existsSync(sslKeyPath) && fs.existsSync(sslCertPath)) {
+            const options = {
+                key: fs.readFileSync(sslKeyPath),
+                cert: fs.readFileSync(sslCertPath)
+            };
+            
+            https.createServer(options, app).listen(HTTPS_PORT, () => {
+                console.log(`🔒 Red Diamond Bank HTTPS server running on https://localhost:${HTTPS_PORT}`);
+                console.log(`   Using SSL certificates from: ${sslKeyPath} and ${sslCertPath}`);
+            });
+        } else {
+            console.warn(`⚠️  HTTPS enabled but certificates not found at ${sslKeyPath} and ${sslCertPath}`);
+            console.warn(`   Set SSL_KEY_PATH and SSL_CERT_PATH in .env file, or disable HTTPS by setting USE_HTTPS=false`);
+        }
+    } catch (error) {
+        console.error('❌ Error starting HTTPS server:', error.message);
+        console.error('   Make sure SSL certificates are in the correct location and readable');
+    }
+}
 
 // Graceful shutdown
 process.on('SIGINT', () => {

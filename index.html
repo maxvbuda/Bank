@@ -65,6 +65,33 @@
                     </div>
                     <button type="submit" class="btn-primary">Register</button>
                 </form>
+                
+                <!-- Forgot Password Modal (inside auth container) -->
+                <div class="modal-overlay" id="forgotPasswordModal" style="display: none;">
+                    <div class="modal-content modal-popup">
+                        <button class="modal-close" id="closeModalBtn" aria-label="Close">×</button>
+                        <h2>🔐 Reset Password</h2>
+                        <p>Enter your username, email, and new password to reset your account.</p>
+                        <form id="forgotPasswordForm">
+                            <div class="form-group">
+                                <label for="resetUsername">Username</label>
+                                <input type="text" id="resetUsername" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="resetEmail">Email</label>
+                                <input type="email" id="resetEmail" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="resetNewPassword">New Password</label>
+                                <input type="password" id="resetNewPassword" required minlength="4">
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button type="submit" class="btn-primary">Reset Password</button>
+                                <button type="button" class="btn-secondary" id="closeModalBtn2">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -175,28 +202,11 @@
         <!-- Notification Area -->
         <div class="notification" id="notification"></div>
         
-        <!-- Forgot Password Modal -->
-        <div class="modal" id="forgotPasswordModal" style="display: none;">
-            <div class="modal-content">
-                <h2>Reset Password</h2>
-                <p>Enter your username to receive a temporary password via email.</p>
-                <form id="forgotPasswordForm">
-                    <div class="form-group">
-                        <label for="resetUsername">Username</label>
-                        <input type="text" id="resetUsername" required>
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button type="submit" class="btn-primary">Send Password</button>
-                        <button type="button" class="btn-secondary" id="closeModalBtn">Cancel</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-        
         <!-- Change Password Modal -->
-        <div class="modal" id="changePasswordModal" style="display: none;">
-            <div class="modal-content">
-                <h2>Change Password</h2>
+        <div class="modal-overlay modal-fixed" id="changePasswordModal" style="display: none;">
+            <div class="modal-content modal-popup">
+                <button class="modal-close" id="closeChangePasswordBtn" aria-label="Close">×</button>
+                <h2>🔐 Change Password</h2>
                 <form id="changePasswordForm">
                     <div class="form-group">
                         <label for="currentPassword">Current Password</label>
@@ -212,19 +222,17 @@
                     </div>
                     <div style="display: flex; gap: 10px;">
                         <button type="submit" class="btn-primary">Change Password</button>
-                        <button type="button" class="btn-secondary" id="closeChangePasswordBtn">Cancel</button>
+                        <button type="button" class="btn-secondary" id="closeChangePasswordBtn2">Cancel</button>
                     </div>
                 </form>
             </div>
         </div>
         
         <!-- Shop Modal -->
-        <div class="modal" id="shopModal" style="display: none;">
-            <div class="modal-content" style="max-width: 900px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2>💎 Diamond Shop</h2>
-                    <button type="button" class="btn-secondary" id="closeShopBtn">Close</button>
-                </div>
+        <div class="modal-overlay modal-fixed" id="shopModal" style="display: none;">
+            <div class="modal-content modal-popup" style="max-width: 900px;">
+                <button class="modal-close" id="closeShopBtn" aria-label="Close">×</button>
+                <h2>💎 Diamond Shop</h2>
                 <div class="shop-grid" id="shopGrid">
                     <!-- Shop items will be dynamically loaded here -->
                 </div>

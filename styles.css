@@ -96,6 +96,13 @@ body {
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
     width: 100%;
     max-width: 450px;
+    position: relative;
+    overflow: visible;
+}
+
+.auth-form {
+    position: relative;
+    z-index: 1;
 }
 
 .auth-container h2 {
@@ -422,11 +429,33 @@ body {
     max-width: 600px;
     height: 600px;
     margin: 20px auto 0;
-    background: radial-gradient(circle at center, #0f0f1f 0%, #0a0a1a 100%);
+    background: 
+        radial-gradient(circle at 20% 30%, rgba(220, 20, 60, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
+        linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #0f0f1f 100%);
     border: 3px solid var(--red-diamond);
-    border-radius: 10px;
+    border-radius: 15px;
     overflow: hidden;
-    box-shadow: 0 0 30px rgba(220, 20, 60, 0.4), inset 0 0 50px rgba(0, 0, 0, 0.8);
+    box-shadow: 
+        0 0 40px rgba(220, 20, 60, 0.6),
+        inset 0 0 60px rgba(0, 0, 0, 0.9),
+        0 0 100px rgba(220, 20, 60, 0.3);
+    animation: boardGlow 3s ease-in-out infinite;
+}
+
+@keyframes boardGlow {
+    0%, 100% {
+        box-shadow: 
+            0 0 40px rgba(220, 20, 60, 0.6),
+            inset 0 0 60px rgba(0, 0, 0, 0.9),
+            0 0 100px rgba(220, 20, 60, 0.3);
+    }
+    50% {
+        box-shadow: 
+            0 0 60px rgba(220, 20, 60, 0.8),
+            inset 0 0 80px rgba(0, 0, 0, 0.95),
+            0 0 120px rgba(220, 20, 60, 0.5);
+    }
 }
 
 .heist-message {
@@ -454,11 +483,38 @@ body {
 }
 
 .heist-cell {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 3px;
+    background: 
+        radial-gradient(circle at center, rgba(255, 255, 255, 0.03) 0%, transparent 70%),
+        rgba(255, 255, 255, 0.01);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
     position: relative;
-    transition: background 0.2s;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.heist-cell:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(220, 20, 60, 0.3);
+    box-shadow: inset 0 0 15px rgba(220, 20, 60, 0.2);
+}
+
+.multiplier-zone {
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.2) 0%, transparent 70%) !important;
+    border-color: rgba(255, 215, 0, 0.5) !important;
+    animation: multiplierPulse 2s ease-in-out infinite;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4) !important;
+}
+
+@keyframes multiplierPulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+        opacity: 0.8;
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+        opacity: 1;
+    }
 }
 
 .heist-player {
@@ -468,11 +524,37 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 32px;
+    font-size: 36px;
     z-index: 50;
-    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
-    animation: playerPulse 1s ease-in-out infinite;
-    transition: all 0.1s ease;
+    filter: drop-shadow(0 0 12px rgba(255, 255, 255, 1)) drop-shadow(0 0 20px rgba(220, 20, 60, 0.6));
+    animation: playerPulse 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    will-change: transform;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+}
+
+.heist-player::before {
+    content: '';
+    position: absolute;
+    width: 120%;
+    height: 120%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(220, 20, 60, 0.3) 0%, transparent 70%);
+    animation: playerAura 2s ease-in-out infinite;
+    z-index: -1;
+}
+
+@keyframes playerAura {
+    0%, 100% {
+        transform: translateZ(0) scale(1);
+        opacity: 0.5;
+    }
+    50% {
+        transform: translateZ(0) scale(1.2);
+        opacity: 0.8;
+    }
 }
 
 .player-dashing {
@@ -498,16 +580,30 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
+    font-size: 28px;
     color: var(--red-diamond);
     z-index: 10;
-    animation: diamondSpin 2s linear infinite;
+    animation: diamondSpin 2s linear infinite, diamondFloat 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    filter: drop-shadow(0 0 8px rgba(220, 20, 60, 0.8)) drop-shadow(0 0 15px rgba(220, 20, 60, 0.5));
+    text-shadow: 0 0 10px rgba(220, 20, 60, 1);
+    will-change: transform;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+}
+
+@keyframes diamondFloat {
+    0%, 100% {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+        transform: translate3d(0, -5px, 0) scale(1.1);
+    }
 }
 
 @keyframes diamondSpin {
-    0% { transform: rotate(0deg) scale(1); }
-    50% { transform: rotate(180deg) scale(1.2); }
-    100% { transform: rotate(360deg) scale(1); }
+    0% { transform: translateZ(0) rotate(0deg) scale(1); }
+    50% { transform: translateZ(0) rotate(180deg) scale(1.2); }
+    100% { transform: translateZ(0) rotate(360deg) scale(1); }
 }
 
 .heist-powerup {
@@ -517,9 +613,20 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28px;
+    font-size: 32px;
     z-index: 10;
-    animation: powerupFloat 1.5s ease-in-out infinite;
+    animation: powerupFloat 1.5s ease-in-out infinite, powerupGlow 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 20px rgba(100, 200, 255, 0.6));
+    text-shadow: 0 0 15px rgba(255, 255, 255, 1);
+}
+
+@keyframes powerupGlow {
+    0%, 100% {
+        filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 20px rgba(100, 200, 255, 0.6));
+    }
+    50% {
+        filter: drop-shadow(0 0 18px rgba(255, 255, 255, 1)) drop-shadow(0 0 30px rgba(100, 200, 255, 0.9));
+    }
 }
 
 @keyframes powerupFloat {
@@ -529,10 +636,32 @@ body {
 
 .heist-laser {
     position: absolute;
-    background: linear-gradient(90deg, transparent, rgba(220, 20, 60, 0.9), rgba(255, 0, 0, 0.9), rgba(220, 20, 60, 0.9), transparent);
-    box-shadow: 0 0 15px rgba(220, 20, 60, 1), 0 0 30px rgba(220, 20, 60, 0.7);
+    background: linear-gradient(90deg, 
+        transparent 0%,
+        rgba(220, 20, 60, 0.3) 20%,
+        rgba(255, 0, 0, 1) 50%,
+        rgba(220, 20, 60, 0.3) 80%,
+        transparent 100%);
+    box-shadow: 
+        0 0 15px rgba(220, 20, 60, 1),
+        0 0 30px rgba(220, 20, 60, 0.9),
+        0 0 50px rgba(220, 20, 60, 0.7),
+        inset 0 0 20px rgba(255, 255, 255, 0.3);
     z-index: 30;
-    animation: laserPulse 0.8s ease-in-out infinite;
+    animation: laserPulse 0.6s cubic-bezier(0.4, 0, 0.2, 1) infinite, laserScan 2s linear infinite;
+    opacity: 0.95;
+    will-change: opacity, transform, filter;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+}
+
+@keyframes laserScan {
+    0% {
+        background-position: 0% 50%;
+    }
+    100% {
+        background-position: 200% 50%;
+    }
 }
 
 .heist-laser.horizontal {
@@ -548,13 +677,20 @@ body {
 }
 
 .heist-laser.danger {
-    background: linear-gradient(90deg, transparent, rgba(255, 0, 0, 1), transparent);
-    box-shadow: 0 0 20px rgba(255, 0, 0, 1), 0 0 40px rgba(255, 0, 0, 0.8);
+    background: linear-gradient(90deg, transparent, rgba(255, 0, 0, 1), rgba(255, 100, 100, 1), rgba(255, 0, 0, 1), transparent);
+    box-shadow: 0 0 25px rgba(255, 0, 0, 1), 0 0 50px rgba(255, 0, 0, 0.9), 0 0 75px rgba(255, 0, 0, 0.6);
+    animation: laserPulse 0.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 @keyframes laserPulse {
-    0%, 100% { opacity: 0.8; }
-    50% { opacity: 1; }
+y    0%, 100% { 
+        opacity: 0.8;
+        filter: brightness(1);
+    }
+    50% { 
+        opacity: 1;
+        filter: brightness(1.3);
+    }
 }
 
 .heist-vault-door {
@@ -564,10 +700,25 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 36px;
-    background: radial-gradient(circle, rgba(255, 215, 0, 0.2), transparent);
+    font-size: 42px;
+    background: 
+        radial-gradient(circle, rgba(255, 215, 0, 0.4) 0%, rgba(255, 215, 0, 0.1) 50%, transparent 100%);
     z-index: 10;
-    animation: vaultGlow 2s ease-in-out infinite;
+    animation: vaultGlow 2s ease-in-out infinite, vaultPulse 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 25px rgba(255, 215, 0, 0.5));
+    border-radius: 8px;
+    box-shadow: 
+        inset 0 0 30px rgba(255, 215, 0, 0.3),
+        0 0 40px rgba(255, 215, 0, 0.4);
+}
+
+@keyframes vaultPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
 }
 
 @keyframes vaultGlow {
@@ -594,12 +745,107 @@ body {
 }
 
 .powerup-slot {
-    background: rgba(220, 20, 60, 0.1);
-    padding: 8px 15px;
-    border-radius: 8px;
-    border: 1px solid rgba(220, 20, 60, 0.3);
+    background: linear-gradient(135deg, rgba(220, 20, 60, 0.2), rgba(220, 20, 60, 0.1));
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 2px solid rgba(220, 20, 60, 0.4);
     font-size: 14px;
     font-weight: bold;
+    box-shadow: 
+        0 0 10px rgba(220, 20, 60, 0.3),
+        inset 0 0 10px rgba(220, 20, 60, 0.1);
+    transition: all 0.3s ease;
+}
+
+.powerup-slot:hover {
+    border-color: rgba(220, 20, 60, 0.6);
+    box-shadow: 
+        0 0 15px rgba(220, 20, 60, 0.5),
+        inset 0 0 15px rgba(220, 20, 60, 0.2);
+    transform: translateY(-2px);
+}
+
+.heist-guard {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    z-index: 20;
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.7)) drop-shadow(0 0 15px rgba(200, 200, 200, 0.4));
+    animation: guardPatrol 2s ease-in-out infinite;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+}
+
+.heist-guard::after {
+    content: '';
+    position: absolute;
+    width: 150%;
+    height: 150%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 0, 0, 0.2) 0%, transparent 70%);
+    animation: guardAlert 3s ease-in-out infinite;
+    z-index: -1;
+}
+
+@keyframes guardPatrol {
+    0%, 100% {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+        transform: translate3d(0, -3px, 0) scale(1.05);
+    }
+}
+
+@keyframes guardAlert {
+    0%, 100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: scale(1.1);
+    }
+}
+
+.heist-trap {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    z-index: 10;
+    animation: trapBlink 1s ease-in-out infinite, trapRotate 3s linear infinite;
+    filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.8));
+    text-shadow: 0 0 10px rgba(255, 165, 0, 1);
+}
+
+@keyframes trapBlink {
+    0%, 100% {
+        opacity: 0.7;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes trapRotate {
+    0% {
+        transform: translateZ(0) rotate(0deg);
+    }
+    25% {
+        transform: translateZ(0) rotate(-10deg);
+    }
+    75% {
+        transform: translateZ(0) rotate(10deg);
+    }
+    100% {
+        transform: translateZ(0) rotate(0deg);
+    }
 }
 
 .heist-particle {
@@ -681,8 +927,9 @@ body {
 }
 
 .race-track {
-.player-speed {
-    filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8)) !important;
+    .player-speed {
+        filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8)) !important;
+    }
 }
 
 .race-track {
@@ -1081,6 +1328,9 @@ body {
     z-index: 10;
     will-change: transform;
     line-height: 1;
+    backface-visibility: hidden;
+    perspective: 1000px;
+    transform: translateZ(0);
 }
 
 .falling-diamond:hover {
@@ -1109,28 +1359,29 @@ body {
 }
 
 .falling-diamond.caught {
-    animation: collect 0.5s ease forwards;
+    animation: collect 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 @keyframes fall {
     0% {
-        transform: translateY(-50px);
+        transform: translate3d(0, -50px, 0);
     }
     100% {
-        transform: translateY(calc(400px + 50px));
+        transform: translate3d(0, calc(400px + 50px), 0);
     }
 }
 
 @keyframes collect {
     0% {
-        transform: scale(1);
+        transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
         opacity: 1;
     }
     50% {
-        transform: scale(1.5) rotate(180deg);
+        transform: translate3d(0, -20px, 0) scale(1.5) rotate(180deg);
+        opacity: 0.9;
     }
     100% {
-        transform: scale(0) rotate(360deg);
+        transform: translate3d(0, -40px, 0) scale(0) rotate(360deg);
         opacity: 0;
     }
 }
@@ -1138,11 +1389,11 @@ body {
 @keyframes floatUp {
     from {
         opacity: 1;
-        transform: translateY(0);
+        transform: translate3d(0, 0, 0) scale(1);
     }
     to {
         opacity: 0;
-        transform: translateY(-50px);
+        transform: translate3d(0, -60px, 0) scale(1.2);
     }
 }
 
@@ -1316,22 +1567,105 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 2000;
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 20px;
+    z-index: 10000;
+    border-radius: 15px;
+    animation: modalFadeIn 0.3s ease-out;
+    overflow-y: auto;
+}
+
+.modal-overlay.modal-fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+    align-items: center;
+    padding-top: 0;
+}
+
+.modal-popup {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10001;
+    max-width: 420px;
+    width: calc(100% - 80px);
+    animation: modalSlideIn 0.3s ease-out;
+    margin: 0;
+    background: linear-gradient(135deg, rgba(22, 33, 62, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
+    border: 3px solid rgba(220, 20, 60, 0.6);
+    border-radius: 20px;
+    box-shadow: 
+        0 20px 80px rgba(0, 0, 0, 0.9),
+        0 10px 40px rgba(0, 0, 0, 0.8),
+        0 0 100px rgba(220, 20, 60, 0.5),
+        0 0 200px rgba(220, 20, 60, 0.3);
+    overflow: hidden;
+}
+
+.modal-fixed .modal-popup {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    margin: auto;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 .modal-content {
-    background: var(--card-bg);
+    background: transparent;
     padding: 40px;
-    border-radius: 15px;
-    max-width: 450px;
-    width: 90%;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    border-radius: 0;
+    max-width: 100%;
+    width: 100%;
     max-height: 90vh;
     overflow-y: auto;
+    animation: modalSlideIn 0.3s ease-out;
+    position: relative;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px) scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
 }
 
 .modal-content h2 {
@@ -1361,4 +1695,39 @@ body {
 
 .btn-secondary:hover {
     background: rgba(220, 20, 60, 0.2);
+}
+
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: transparent;
+    border: none;
+    color: var(--text-light);
+    font-size: 32px;
+    line-height: 1;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    opacity: 0.7;
+}
+
+.modal-close:hover {
+    opacity: 1;
+    background: rgba(220, 20, 60, 0.2);
+    transform: rotate(90deg);
+    color: var(--red-diamond);
+}
+
+/* Responsive adjustments for modal overlay */
+@media (max-width: 768px) {
+    .modal-popup {
+        max-width: 95%;
+        padding: 30px 20px;
+    }
 }

@@ -29,6 +29,7 @@ class BankApp {
         // Change password
         document.getElementById('changePasswordBtn').addEventListener('click', () => this.showChangePasswordModal());
         document.getElementById('closeChangePasswordBtn').addEventListener('click', () => this.closeChangePasswordModal());
+        document.getElementById('closeChangePasswordBtn2').addEventListener('click', () => this.closeChangePasswordModal());
         document.getElementById('changePasswordForm').addEventListener('submit', (e) => this.handleChangePassword(e));
         
         // Shop
@@ -44,6 +45,7 @@ class BankApp {
             this.showForgotPasswordModal();
         });
         document.getElementById('closeModalBtn').addEventListener('click', () => this.closeForgotPasswordModal());
+        document.getElementById('closeModalBtn2').addEventListener('click', () => this.closeForgotPasswordModal());
         document.getElementById('forgotPasswordForm').addEventListener('submit', (e) => this.handleForgotPassword(e));
     }
 
@@ -380,16 +382,69 @@ class BankApp {
     }
 
     showForgotPasswordModal() {
-        document.getElementById('forgotPasswordModal').style.display = 'flex';
+        const modal = document.getElementById('forgotPasswordModal');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        
+        // Hide login/register forms when modal is shown
+        if (loginForm) loginForm.style.opacity = '0.3';
+        if (registerForm) registerForm.style.opacity = '0.3';
+        
+        modal.style.display = 'flex';
+        
+        // Close on background click
+        const clickHandler = (e) => {
+            if (e.target === modal) {
+                this.closeForgotPasswordModal();
+                modal.removeEventListener('click', clickHandler);
+            }
+        };
+        modal.addEventListener('click', clickHandler);
+        
+        // Close on Escape key
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                this.closeForgotPasswordModal();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
     }
 
     closeForgotPasswordModal() {
-        document.getElementById('forgotPasswordModal').style.display = 'none';
+        const modal = document.getElementById('forgotPasswordModal');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        
+        modal.style.display = 'none';
         document.getElementById('forgotPasswordForm').reset();
+        
+        // Restore login/register forms opacity
+        if (loginForm) loginForm.style.opacity = '1';
+        if (registerForm) registerForm.style.opacity = '1';
     }
 
     showChangePasswordModal() {
-        document.getElementById('changePasswordModal').style.display = 'flex';
+        const modal = document.getElementById('changePasswordModal');
+        modal.style.display = 'flex';
+
+        // Close on outside click
+        const clickHandler = (e) => {
+            if (e.target === modal) {
+                this.closeChangePasswordModal();
+                modal.removeEventListener('click', clickHandler);
+            }
+        };
+        modal.addEventListener('click', clickHandler);
+
+        // Close on Escape key
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                this.closeChangePasswordModal();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
     }
 
     closeChangePasswordModal() {
@@ -438,9 +493,28 @@ class BankApp {
     }
 
     async showShop() {
-        document.getElementById('shopModal').style.display = 'flex';
+        const modal = document.getElementById('shopModal');
+        modal.style.display = 'flex';
         await this.loadShopItems();
         await this.loadInventory();
+
+        // Close on outside click
+        const clickHandler = (e) => {
+            if (e.target === modal) {
+                this.closeShop();
+                modal.removeEventListener('click', clickHandler);
+            }
+        };
+        modal.addEventListener('click', clickHandler);
+
+        // Close on Escape key
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                this.closeShop();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
     }
 
     closeShop() {
@@ -544,22 +618,25 @@ class BankApp {
     async handleForgotPassword(e) {
         e.preventDefault();
         const username = document.getElementById('resetUsername').value;
+        const email = document.getElementById('resetEmail').value;
+        const newPassword = document.getElementById('resetNewPassword').value;
+
+        if (newPassword.length < 4) {
+            this.showNotification('Password must be at least 4 characters', 'error');
+            return;
+        }
 
         try {
             const response = await fetch('http://localhost:3000/api/reset-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username })
+                body: JSON.stringify({ username, email, newPassword })
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                if (data.tempPassword) {
-                    this.showNotification(`Temporary password: ${data.tempPassword}`, 'success');
-                } else {
-                    this.showNotification(`Password reset email sent to ${data.email}`, 'success');
-                }
+                this.showNotification('Password reset successfully! You can now log in with your new password.', 'success');
                 this.closeForgotPasswordModal();
             } else {
                 this.showNotification(data.error || 'Reset failed', 'error');
@@ -702,18 +779,23 @@ class BankApp {
         // Calculate fall distance
         const fallDistance = boardHeight + 100;
         
-        // Set initial position (above the board)
-        diamond.style.transform = 'translateY(-50px)';
+        // Set initial position (above the board) - use transform3d for hardware acceleration
+        diamond.style.transform = 'translate3d(0, -50px, 0)';
         diamond.style.transition = 'none';
+        diamond.style.willChange = 'transform';
+        diamond.style.backfaceVisibility = 'hidden';
         
         // Force reflow
         void diamond.offsetHeight;
         
-        // Start falling animation
+        // Double requestAnimationFrame for smoother animation start
         requestAnimationFrame(() => {
-            if (!diamond.parentNode || diamond.classList.contains('caught')) return;
-            diamond.style.transition = `transform ${fallDuration}s linear`;
-            diamond.style.transform = `translateY(${fallDistance}px)`;
+            requestAnimationFrame(() => {
+                if (!diamond.parentNode || diamond.classList.contains('caught')) return;
+                // Use smooth easing for better feel
+                diamond.style.transition = `transform ${fallDuration}s cubic-bezier(0.4, 0.0, 0.2, 1)`;
+                diamond.style.transform = `translate3d(0, ${fallDistance}px, 0)`;
+            });
         });
         
         // Remove diamond after it falls
@@ -1277,12 +1359,20 @@ class BankApp {
         const newY = Math.max(0, Math.min(9, this.heistPlayerPos.y + dy));
         
         if (newX !== this.heistPlayerPos.x || newY !== this.heistPlayerPos.y) {
-            // Remove from old cell
+            // Remove from old cell with fade out
             const oldCell = this.heistGrid[this.heistPlayerPos.y][this.heistPlayerPos.x];
             const player = oldCell.querySelector('.heist-player');
-            if (player) oldCell.removeChild(player);
+            if (player) {
+                player.style.opacity = '0';
+                player.style.transform = 'scale(0.8)';
+                setTimeout(() => {
+                    if (player.parentNode) {
+                        oldCell.removeChild(player);
+                    }
+                }, 100);
+            }
             
-            // Add to new cell
+            // Add to new cell with smooth fade in
             this.heistPlayerPos.x = newX;
             this.heistPlayerPos.y = newY;
             const newCell = this.heistGrid[newY][newX];
@@ -1290,6 +1380,8 @@ class BankApp {
             newPlayer.className = 'heist-player';
             newPlayer.id = 'heistPlayer';
             newPlayer.textContent = '🥷';
+            newPlayer.style.opacity = '0';
+            newPlayer.style.transform = 'scale(0.8)';
             
             if (isSprinting) {
                 newPlayer.classList.add('player-speed');
@@ -1302,6 +1394,15 @@ class BankApp {
             }
             
             newCell.appendChild(newPlayer);
+            
+            // Smooth fade in animation
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    newPlayer.style.transition = 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)';
+                    newPlayer.style.opacity = '1';
+                    newPlayer.style.transform = 'scale(1)';
+                });
+            });
             
             this.checkHeistCollision();
         }
