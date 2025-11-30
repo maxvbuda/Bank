@@ -18,6 +18,7 @@
                 <span id="userName">Guest</span>
                 <button class="btn-test-mode" id="testModeBtn" style="display: none;">🔧 Test Mode: OFF</button>
                 <button class="btn-shop" id="shopBtn" style="display: none;">💎 Shop</button>
+                <button class="btn-mail" id="mailBtn" style="display: none;">📧 Mail</button>
                 <button class="btn-change-password" id="changePasswordBtn" style="display: none;">Change Password</button>
                 <button class="btn-logout" id="logoutBtn" style="display: none;">Logout</button>
                 <button class="btn-delete" id="deleteAccountBtn" style="display: none;">Delete Account</button>
@@ -194,6 +195,58 @@
                 </div>
             </div>
         </section>
+
+        <!-- Mail Service Modal -->
+        <div class="modal-overlay modal-fixed" id="mailModal" style="display: none;">
+            <div class="modal-content modal-popup" style="max-width: 800px;">
+                <button class="modal-close" id="closeMailBtn" aria-label="Close">×</button>
+                <h2>📧 Bank Mail Service</h2>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button class="btn-primary" id="composeMailBtn" style="flex: 1;">✉️ Compose</button>
+                    <button class="btn-secondary" id="inboxMailBtn" style="flex: 1;">📥 Inbox</button>
+                    <button class="btn-secondary" id="sentMailBtn" style="flex: 1;">📤 Sent</button>
+                </div>
+
+                <!-- Compose Mail View -->
+                <div id="composeMailView" style="display: none;">
+                    <form id="composeMailForm">
+                        <div class="form-group">
+                            <label for="mailTo">To (Username or Email)</label>
+                            <input type="text" id="mailTo" required placeholder="Enter username or email address">
+                        </div>
+                        <div class="form-group">
+                            <label for="mailSubject">Subject</label>
+                            <input type="text" id="mailSubject" required placeholder="Email subject">
+                        </div>
+                        <div class="form-group">
+                            <label for="mailBody">Message</label>
+                            <textarea id="mailBody" rows="8" required placeholder="Type your message here..." style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(220, 20, 60, 0.3); background: rgba(22, 33, 62, 0.5); color: var(--text-light); font-family: inherit; resize: vertical;"></textarea>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button type="submit" class="btn-primary">📧 Send Email</button>
+                            <button type="button" class="btn-secondary" id="cancelComposeBtn">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Inbox View -->
+                <div id="inboxMailView" style="display: none;">
+                    <h3>📥 Inbox</h3>
+                    <div id="inboxMailList" class="mail-list">
+                        <p style="color: #888; text-align: center;">No emails yet</p>
+                    </div>
+                </div>
+
+                <!-- Sent Mail View -->
+                <div id="sentMailView" style="display: none;">
+                    <h3>📤 Sent</h3>
+                    <div id="sentMailList" class="mail-list">
+                        <p style="color: #888; text-align: center;">No sent emails yet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Notification Area -->
         <div class="notification" id="notification"></div>

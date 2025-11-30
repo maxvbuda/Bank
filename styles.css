@@ -236,6 +236,49 @@ body {
     box-shadow: 0 5px 20px rgba(220, 20, 60, 0.4);
 }
 
+.btn-mail {
+    padding: 8px 20px;
+    background: linear-gradient(135deg, #4169e1, #6495ed);
+    border: 2px solid #4169e1;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: bold;
+}
+
+.btn-mail:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(65, 105, 225, 0.4);
+}
+
+.mail-list {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-top: 15px;
+}
+
+.mail-item {
+    transition: all 0.3s ease;
+}
+
+.mail-item:hover {
+    background: rgba(220, 20, 60, 0.2) !important;
+    transform: translateX(5px);
+}
+
+.mail-item strong {
+    color: var(--red-diamond);
+}
+
+#composeMailBtn.active,
+#inboxMailBtn.active,
+#sentMailBtn.active {
+    background: linear-gradient(135deg, var(--red-diamond), #ff1744);
+    border-color: var(--red-diamond);
+    color: white;
+}
+
 .btn-test-mode {
     padding: 8px 20px;
     background: rgba(128, 128, 128, 0.2);

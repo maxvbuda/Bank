@@ -36,6 +36,15 @@ class BankApp {
         document.getElementById('shopBtn').addEventListener('click', () => this.showShop());
         document.getElementById('closeShopBtn').addEventListener('click', () => this.closeShop());
         
+        // Mail
+        document.getElementById('mailBtn').addEventListener('click', () => this.showMail());
+        document.getElementById('closeMailBtn').addEventListener('click', () => this.closeMail());
+        document.getElementById('composeMailBtn').addEventListener('click', () => this.showComposeView());
+        document.getElementById('inboxMailBtn').addEventListener('click', () => this.showInboxView());
+        document.getElementById('sentMailBtn').addEventListener('click', () => this.showSentView());
+        document.getElementById('composeMailForm').addEventListener('submit', (e) => this.handleSendMail(e));
+        document.getElementById('cancelComposeBtn').addEventListener('click', () => this.showInboxView());
+        
         // Test mode
         document.getElementById('testModeBtn').addEventListener('click', () => this.toggleTestMode());
         
@@ -229,6 +238,7 @@ class BankApp {
         document.getElementById('deleteAccountBtn').style.display = 'block';
         document.getElementById('changePasswordBtn').style.display = 'block';
         document.getElementById('shopBtn').style.display = 'block';
+        document.getElementById('mailBtn').style.display = 'block';
         document.getElementById('testModeBtn').style.display = 'block';
 
         await this.loadBalance();
@@ -632,13 +642,12 @@ class BankApp {
             if (response.ok) {
                 if (data.emailSent) {
                     this.showNotification('Temporary password sent to ' + data.email + '. Please check your email and log in to change it.', 'success');
-                } else if (data.tempPassword) {
-                    // Fallback if email service not configured
-                    this.showNotification('Temporary password: ' + data.tempPassword, 'success');
+                    this.closeForgotPasswordModal();
                 } else {
-                    this.showNotification(data.message || 'Password reset email sent', 'success');
+                    // Email failed to send - show error, don't show password
+                    const errorMsg = data.emailError ? 'Email could not be sent: ' + data.emailError + '. Please check your email configuration.' : 'Email could not be sent. Please contact support.';
+                    this.showNotification(errorMsg, 'error');
                 }
-                this.closeForgotPasswordModal();
             } else {
                 this.showNotification(data.error || 'Reset failed', 'error');
             }
@@ -1841,6 +1850,151 @@ class BankApp {
         setTimeout(() => {
             notification.classList.remove('show');
         }, 3000);
+    }
+
+    // Mail Service Functions
+    async showMail() {
+        const modal = document.getElementById('mailModal');
+        modal.style.display = 'flex';
+        this.showInboxView();
+        await this.loadInbox();
+        await this.loadSentMail();
+
+        // Close on outside click
+        const clickHandler = (e) => {
+            if (e.target === modal) {
+                this.closeMail();
+                modal.removeEventListener('click', clickHandler);
+            }
+        };
+        modal.addEventListener('click', clickHandler);
+
+        // Close on Escape key
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                this.closeMail();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+    }
+
+    closeMail() {
+        document.getElementById('mailModal').style.display = 'none';
+    }
+
+    showComposeView() {
+        document.getElementById('composeMailView').style.display = 'block';
+        document.getElementById('inboxMailView').style.display = 'none';
+        document.getElementById('sentMailView').style.display = 'none';
+        document.getElementById('composeMailBtn').classList.add('active');
+        document.getElementById('inboxMailBtn').classList.remove('active');
+        document.getElementById('sentMailBtn').classList.remove('active');
+    }
+
+    showInboxView() {
+        document.getElementById('composeMailView').style.display = 'none';
+        document.getElementById('inboxMailView').style.display = 'block';
+        document.getElementById('sentMailView').style.display = 'none';
+        document.getElementById('composeMailBtn').classList.remove('active');
+        document.getElementById('inboxMailBtn').classList.add('active');
+        document.getElementById('sentMailBtn').classList.remove('active');
+        this.loadInbox();
+    }
+
+    showSentView() {
+        document.getElementById('composeMailView').style.display = 'none';
+        document.getElementById('inboxMailView').style.display = 'none';
+        document.getElementById('sentMailView').style.display = 'block';
+        document.getElementById('composeMailBtn').classList.remove('active');
+        document.getElementById('inboxMailBtn').classList.remove('active');
+        document.getElementById('sentMailBtn').classList.add('active');
+        this.loadSentMail();
+    }
+
+    async handleSendMail(e) {
+        e.preventDefault();
+        const to = document.getElementById('mailTo').value;
+        const subject = document.getElementById('mailSubject').value;
+        const body = document.getElementById('mailBody').value;
+
+        try {
+            const response = await fetch('http://localhost:3000/api/mail/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: localStorage.getItem('userId'),
+                    to: to,
+                    subject: subject,
+                    body: body
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                this.showNotification('Email sent successfully!', 'success');
+                document.getElementById('composeMailForm').reset();
+                this.showSentView();
+                await this.loadSentMail();
+            } else {
+                this.showNotification(data.error || 'Failed to send email', 'error');
+            }
+        } catch (error) {
+            this.showNotification('Network error. Please try again.', 'error');
+        }
+    }
+
+    async loadInbox() {
+        try {
+            const response = await fetch(`http://localhost:3000/api/mail/inbox?userId=${localStorage.getItem('userId')}`);
+            const emails = await response.json();
+            
+            const inboxList = document.getElementById('inboxMailList');
+            if (emails.length === 0) {
+                inboxList.innerHTML = '<p style="color: #888; text-align: center;">No emails yet</p>';
+                return;
+            }
+
+            inboxList.innerHTML = emails.map(email => `
+                <div class="mail-item" style="padding: 15px; margin-bottom: 10px; background: rgba(220, 20, 60, 0.1); border-left: 3px solid var(--red-diamond); border-radius: 8px; cursor: pointer;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <strong style="color: var(--red-diamond);">${email.from_username || email.from_email}</strong>
+                        <span style="color: #888; font-size: 12px;">${new Date(email.sent_at).toLocaleDateString()}</span>
+                    </div>
+                    <div style="font-weight: bold; margin-bottom: 5px;">${email.subject}</div>
+                    <div style="color: #aaa; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${email.body}</div>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Failed to load inbox:', error);
+        }
+    }
+
+    async loadSentMail() {
+        try {
+            const response = await fetch(`http://localhost:3000/api/mail/sent?userId=${localStorage.getItem('userId')}`);
+            const emails = await response.json();
+            
+            const sentList = document.getElementById('sentMailList');
+            if (emails.length === 0) {
+                sentList.innerHTML = '<p style="color: #888; text-align: center;">No sent emails yet</p>';
+                return;
+            }
+
+            sentList.innerHTML = emails.map(email => `
+                <div class="mail-item" style="padding: 15px; margin-bottom: 10px; background: rgba(220, 20, 60, 0.1); border-left: 3px solid var(--red-diamond); border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <strong style="color: var(--red-diamond);">To: ${email.to_username || email.to_email}</strong>
+                        <span style="color: #888; font-size: 12px;">${new Date(email.sent_at).toLocaleDateString()}</span>
+                    </div>
+                    <div style="font-weight: bold; margin-bottom: 5px;">${email.subject}</div>
+                    <div style="color: #aaa; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${email.body}</div>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Failed to load sent mail:', error);
+        }
     }
 }
 

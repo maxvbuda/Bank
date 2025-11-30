@@ -6,6 +6,7 @@ const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const path = require('path');
 const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const https = require('https');
 const http = require('http');
 const fs = require('fs');
@@ -17,30 +18,23 @@ const USE_HTTPS = process.env.USE_HTTPS === 'true';
 
 // Email configuration
 // Configure email using environment variables in .env file
-// Supports Gmail, GoDaddy, Resend, and other SMTP services
+// Supports Gmail, GoDaddy, Resend (API), and other SMTP services
 
 let transporter = null;
-if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-    // Resend SMTP configuration
-    if (process.env.EMAIL_SERVICE === 'resend') {
-        transporter = nodemailer.createTransport({
-            host: process.env.EMAIL_HOST || 'smtp.resend.com',
-            port: parseInt(process.env.EMAIL_PORT) || 587,
-            secure: false, // Resend uses STARTTLS on port 587
-            auth: {
-                user: 'resend',
-                pass: process.env.EMAIL_PASS // Use Resend API key as password
-            }
-        });
-        console.log('Email service configured (Resend SMTP)');
-    }
+let resendClient = null;
+
+if (process.env.EMAIL_SERVICE === 'resend' && process.env.EMAIL_PASS) {
+    // Resend API configuration (Resend doesn't support SMTP)
+    resendClient = new Resend(process.env.EMAIL_PASS);
+    console.log('Email service configured (Resend API)');
+} else if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
     // GoDaddy SMTP configuration
-    else if (process.env.EMAIL_SERVICE === 'godaddy' || process.env.EMAIL_HOST) {
+    if (process.env.EMAIL_SERVICE === 'godaddy' || process.env.EMAIL_HOST) {
         transporter = nodemailer.createTransport({
             host: process.env.EMAIL_HOST || 'smtpout.secureserver.net',
             port: parseInt(process.env.EMAIL_PORT) || 465,
             secure: (process.env.EMAIL_PORT === '465' || !process.env.EMAIL_PORT), // true for 465, false for other ports
-            auth: {
+    auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS
             },
@@ -61,12 +55,13 @@ if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
         console.log(`Email service configured (${process.env.EMAIL_SERVICE || 'gmail'})`);
     }
 } else {
-    console.warn('Email service not configured. Set EMAIL_USER and EMAIL_PASS in .env file to enable email functionality.');
+    console.warn('Email service not configured. Set EMAIL_SERVICE=resend and EMAIL_PASS, or EMAIL_USER and EMAIL_PASS in .env file to enable email functionality.');
 }
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true })); // For webhook form data
 app.use(express.static(__dirname));
 
 // Database setup
@@ -117,6 +112,46 @@ function initializeDatabase() {
             quantity INTEGER DEFAULT 1,
             purchased_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    `);
+
+    db.run(`
+        CREATE TABLE IF NOT EXISTS incoming_emails (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            from_email TEXT NOT NULL,
+            to_email TEXT NOT NULL,
+            subject TEXT,
+            body TEXT,
+            received_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    db.run(`
+        CREATE TABLE IF NOT EXISTS incoming_emails (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            from_email TEXT NOT NULL,
+            to_email TEXT NOT NULL,
+            subject TEXT,
+            body TEXT,
+            received_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    db.run(`
+        CREATE TABLE IF NOT EXISTS mail (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            from_user_id INTEGER NOT NULL,
+            from_username TEXT NOT NULL,
+            from_email TEXT NOT NULL,
+            to_user_id INTEGER,
+            to_username TEXT,
+            to_email TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            body TEXT NOT NULL,
+            sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            read_at DATETIME,
+            FOREIGN KEY (from_user_id) REFERENCES users(id),
+            FOREIGN KEY (to_user_id) REFERENCES users(id)
         )
     `);
 
@@ -536,18 +571,12 @@ app.post('/api/reset-password', async (req, res) => {
                     console.log(`Email transporter available: ${transporter ? 'Yes' : 'No'}`);
 
                     // Send email with temporary password
-                    const fromEmail = process.env.EMAIL_SERVICE === 'resend' 
-                        ? process.env.EMAIL_USER 
-                        : (process.env.EMAIL_USER || 'Red Diamond Bank <noreply@reddiamondbank.com>');
+                    const fromEmail = 'Red Diamond Bank <mail@reddiamondbank.com>';
                     
                     console.log(`From email: ${fromEmail}`);
                     console.log(`To email: ${user.email}`);
                     
-                    const mailOptions = {
-                        from: fromEmail,
-                        to: user.email,
-                        subject: 'Red Diamond Bank - Password Reset',
-                        html: `
+                    const emailHtml = `
                             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                                 <h2 style="color: #dc143c;">🔴 Red Diamond Bank</h2>
                                 <h3>Password Reset Request</h3>
@@ -561,44 +590,73 @@ app.post('/api/reset-password', async (req, res) => {
                                     If you did not request this password reset, please contact support immediately.
                                 </p>
                             </div>
-                        `
-                    };
+                    `;
 
-                    if (transporter) {
+                    // Use Resend API if configured, otherwise use SMTP transporter
+                    if (resendClient) {
                         try {
-                            console.log('Attempting to send email...');
+                            console.log('Attempting to send email via Resend API...');
+                            const { data, error } = await resendClient.emails.send({
+                                from: fromEmail,
+                                to: user.email,
+                                subject: 'Red Diamond Bank - Password Reset',
+                                html: emailHtml
+                            });
+                            
+                            if (error) {
+                                throw error;
+                            }
+                            
+                            console.log('Temporary password email sent successfully via Resend!');
+                            console.log('Email ID:', data?.id);
+                        res.json({
+                                message: 'Temporary password sent to ' + user.email,
+                                emailSent: true,
+                            email: user.email
+                        });
+                    } catch (emailError) {
+                            console.error('Resend API email send failed:');
+                            console.error('Error:', emailError);
+                            res.status(500).json({
+                                error: 'Failed to send email. Please check email configuration or contact support.',
+                                emailSent: false,
+                                emailError: emailError.message || 'Unknown error',
+                                email: user.email
+                            });
+                        }
+                    } else if (transporter) {
+                        try {
+                            console.log('Attempting to send email via SMTP...');
+                            const mailOptions = {
+                                from: fromEmail,
+                                to: user.email,
+                                subject: 'Red Diamond Bank - Password Reset',
+                                html: emailHtml
+                            };
                             const info = await transporter.sendMail(mailOptions);
-                            console.log('Temporary password email sent successfully!');
+                            console.log('Temporary password email sent successfully via SMTP!');
                             console.log('Message ID:', info.messageId);
-                            console.log('Response:', info.response);
-                            res.json({
+                        res.json({
                                 message: 'Temporary password sent to ' + user.email,
                                 emailSent: true,
                                 email: user.email
                             });
                         } catch (emailError) {
-                            console.error('Email send failed:');
+                            console.error('SMTP email send failed:');
                             console.error('Error:', emailError);
-                            console.error('Error message:', emailError.message);
-                            console.error('Error code:', emailError.code);
-                            console.error('Error response:', emailError.response);
-                            // Email failed, return temp password as fallback
-                            res.json({
-                                message: 'Email service error. Your temporary password: ' + tempPassword,
+                            res.status(500).json({
+                                error: 'Failed to send email. Please check email configuration or contact support.',
                                 emailSent: false,
-                                tempPassword: tempPassword,
                                 emailError: emailError.message || 'Unknown error',
                                 email: user.email
                             });
                         }
                     } else {
-                        console.error('Email transporter is not configured!');
-                        console.error('Check your .env file for EMAIL_USER and EMAIL_PASS');
-                        // Return temp password if email not configured
-                        res.json({
-                            message: 'Email service not configured. Your temporary password: ' + tempPassword,
+                        console.error('Email service is not configured!');
+                        console.error('Check your .env file for EMAIL_SERVICE and EMAIL_PASS');
+                        res.status(500).json({
+                            error: 'Email service is not configured. Please contact support.',
                             emailSent: false,
-                            tempPassword: tempPassword,
                             emailError: 'Email service not configured',
                             email: user.email
                         });
@@ -804,10 +862,352 @@ app.post('/api/race-reward', (req, res) => {
     });
 });
 
+// Resend Webhooks - Receive email events (bounces, opens, clicks, etc.)
+app.post('/api/webhooks/resend', (req, res) => {
+    const event = req.body;
+    
+    console.log('Resend webhook received:', event.type);
+    
+    // Handle different event types
+    switch (event.type) {
+        case 'email.sent':
+            console.log('Email sent:', event.data);
+            break;
+        case 'email.delivered':
+            console.log('Email delivered:', event.data);
+            break;
+        case 'email.delivery_delayed':
+            console.log('Email delivery delayed:', event.data);
+            break;
+        case 'email.complained':
+            console.log('Email complained (marked as spam):', event.data);
+            break;
+        case 'email.bounced':
+            console.log('Email bounced:', event.data);
+            break;
+        case 'email.opened':
+            console.log('Email opened:', event.data);
+            break;
+        case 'email.clicked':
+            console.log('Email clicked:', event.data);
+            break;
+        default:
+            console.log('Unknown event type:', event.type);
+    }
+    
+    // Always return 200 to acknowledge receipt
+    res.status(200).json({ received: true });
+});
+
+// Receive incoming emails (via forwarding or email service webhook)
+// This endpoint can receive emails forwarded from your email service
+app.post('/api/webhooks/incoming-email', (req, res) => {
+    try {
+        const emailData = req.body;
+        
+        console.log('Incoming email received:');
+        console.log('From:', emailData.from || emailData.sender);
+        console.log('To:', emailData.to || emailData.recipient);
+        console.log('Subject:', emailData.subject);
+        console.log('Body:', emailData.text || emailData.html);
+        
+        // Process the incoming email
+        // You can add logic here to handle different types of emails
+        // For example: support requests, password reset requests, etc.
+        
+        // Store in database if needed
+        db.run(
+            'INSERT INTO incoming_emails (from_email, to_email, subject, body, received_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)',
+            [
+                emailData.from || emailData.sender,
+                emailData.to || emailData.recipient,
+                emailData.subject,
+                emailData.text || emailData.html || ''
+            ],
+            (err) => {
+                if (err) {
+                    console.error('Error storing incoming email:', err);
+                } else {
+                    console.log('Incoming email stored in database');
+                }
+            }
+        );
+        
+        res.status(200).json({ received: true, message: 'Email received and processed' });
+    } catch (error) {
+        console.error('Error processing incoming email:', error);
+        res.status(500).json({ error: 'Failed to process email' });
+    }
+});
+
+// Get received emails
+app.get('/api/incoming-emails', (req, res) => {
+    db.all(
+        'SELECT * FROM incoming_emails ORDER BY received_at DESC LIMIT 50',
+        [],
+        (err, emails) => {
+            if (err) {
+                return res.status(500).json({ error: 'Failed to fetch emails' });
+            }
+            res.json(emails);
+        }
+    );
+});
+
+// Mail Service - Send Email
+app.post('/api/mail/send', async (req, res) => {
+    const { userId, to, subject, body } = req.body;
+
+    if (!userId || !to || !subject || !body) {
+        return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    // Get sender info
+    db.get('SELECT * FROM users WHERE id = ?', [userId], async (err, sender) => {
+        if (err) {
+            return res.status(500).json({ error: 'Server error' });
+        }
+
+        if (!sender) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Find recipient - check if 'to' is a username or email
+        db.get('SELECT * FROM users WHERE username = ? OR email = ?', [to, to], async (err, recipient) => {
+            if (err) {
+                return res.status(500).json({ error: 'Server error' });
+            }
+
+            const recipientEmail = recipient ? recipient.email : to;
+            const recipientUsername = recipient ? recipient.username : null;
+            const recipientId = recipient ? recipient.id : null;
+
+            // Store email in database
+            db.run(
+                'INSERT INTO mail (from_user_id, from_username, from_email, to_user_id, to_username, to_email, subject, body) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                [userId, sender.username, sender.email, recipientId, recipientUsername, recipientEmail, subject, body],
+                async (err) => {
+                    if (err) {
+                        console.error('Error storing mail:', err);
+                        return res.status(500).json({ error: 'Failed to store email' });
+                    }
+
+                    // Send email via Resend or SMTP
+                    const fromEmail = `Red Diamond Bank <mail@reddiamondbank.com>`;
+
+                    const emailHtml = `
+                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                            <h2 style="color: #dc143c;">🔴 Red Diamond Bank</h2>
+                            <h3>${subject}</h3>
+                            <p><strong>From:</strong> ${sender.username} (${sender.email})</p>
+                            <div style="background: #f5f5f5; padding: 20px; border-left: 4px solid #dc143c; margin: 20px 0; border-radius: 4px;">
+                                ${body.replace(/\n/g, '<br>')}
+                            </div>
+                            <p style="color: #666; font-size: 12px; margin-top: 30px;">
+                                This email was sent through Red Diamond Bank Mail Service.
+                            </p>
+                        </div>
+                    `;
+
+                    // Send via Resend API or SMTP
+                    if (resendClient) {
+                        try {
+                            const { data, error } = await resendClient.emails.send({
+                                from: fromEmail,
+                                to: recipientEmail,
+                                subject: `[Red Diamond Bank] ${subject}`,
+                                html: emailHtml
+                            });
+                            
+                            if (error) throw error;
+                            
+                            console.log('Mail sent via Resend:', data?.id);
+                            res.json({ message: 'Email sent successfully', emailSent: true });
+                        } catch (emailError) {
+                            console.error('Resend email failed:', emailError);
+                            // Still return success since email is stored in database
+                            res.json({ 
+                                message: 'Email stored but could not be sent via email service', 
+                                emailSent: false,
+                                emailError: emailError.message 
+                            });
+                        }
+                    } else if (transporter) {
+                        try {
+                            const mailOptions = {
+                                from: fromEmail,
+                                to: recipientEmail,
+                                subject: `[Red Diamond Bank] ${subject}`,
+                                html: emailHtml
+                            };
+                            await transporter.sendMail(mailOptions);
+                            console.log('Mail sent via SMTP');
+                            res.json({ message: 'Email sent successfully', emailSent: true });
+                        } catch (emailError) {
+                            console.error('SMTP email failed:', emailError);
+                            res.json({ 
+                                message: 'Email stored but could not be sent via email service', 
+                                emailSent: false,
+                                emailError: emailError.message 
+                            });
+                        }
+                    } else {
+                        // No email service configured, just store in database
+                        res.json({ 
+                            message: 'Email stored (email service not configured)', 
+                            emailSent: false 
+                        });
+                    }
+                }
+            );
+        });
+    });
+});
+
+// Get Inbox
+app.get('/api/mail/inbox', (req, res) => {
+    const userId = req.query.userId;
+
+    if (!userId) {
+        return res.status(400).json({ error: 'User ID required' });
+    }
+
+    db.all(
+        `SELECT m.*, u.username as from_username 
+         FROM mail m 
+         LEFT JOIN users u ON m.from_user_id = u.id 
+         WHERE m.to_user_id = ? OR m.to_email = (SELECT email FROM users WHERE id = ?)
+         ORDER BY m.sent_at DESC`,
+        [userId, userId],
+        (err, emails) => {
+            if (err) {
+                return res.status(500).json({ error: 'Failed to fetch inbox' });
+            }
+            res.json(emails);
+        }
+    );
+});
+
+// Get Sent Mail
+app.get('/api/mail/sent', (req, res) => {
+    const userId = req.query.userId;
+
+    if (!userId) {
+        return res.status(400).json({ error: 'User ID required' });
+    }
+
+    db.all(
+        `SELECT m.*, u.username as to_username 
+         FROM mail m 
+         LEFT JOIN users u ON m.to_user_id = u.id 
+         WHERE m.from_user_id = ?
+         ORDER BY m.sent_at DESC`,
+        [userId],
+        (err, emails) => {
+            if (err) {
+                return res.status(500).json({ error: 'Failed to fetch sent mail' });
+            }
+            res.json(emails);
+        }
+    );
+});
+
 // Start HTTP server (always available)
 http.createServer(app).listen(PORT, () => {
     console.log(`🏦 Red Diamond Bank server running on http://localhost:${PORT}`);
     console.log(`💎 Currency: Red Diamonds ◆`);
+});
+
+// Resend Webhooks - Receive email events (bounces, opens, clicks, etc.)
+app.post('/api/webhooks/resend', (req, res) => {
+    const event = req.body;
+    
+    console.log('Resend webhook received:', event.type);
+    
+    // Handle different event types
+    switch (event.type) {
+        case 'email.sent':
+            console.log('Email sent:', event.data);
+            break;
+        case 'email.delivered':
+            console.log('Email delivered:', event.data);
+            break;
+        case 'email.delivery_delayed':
+            console.log('Email delivery delayed:', event.data);
+            break;
+        case 'email.complained':
+            console.log('Email complained (marked as spam):', event.data);
+            break;
+        case 'email.bounced':
+            console.log('Email bounced:', event.data);
+            break;
+        case 'email.opened':
+            console.log('Email opened:', event.data);
+            break;
+        case 'email.clicked':
+            console.log('Email clicked:', event.data);
+            break;
+        default:
+            console.log('Unknown event type:', event.type);
+    }
+    
+    // Always return 200 to acknowledge receipt
+    res.status(200).json({ received: true });
+});
+
+// Receive incoming emails (via forwarding or email service webhook)
+// This endpoint can receive emails forwarded from your email service
+app.post('/api/webhooks/incoming-email', (req, res) => {
+    try {
+        const emailData = req.body;
+        
+        console.log('Incoming email received:');
+        console.log('From:', emailData.from || emailData.sender);
+        console.log('To:', emailData.to || emailData.recipient);
+        console.log('Subject:', emailData.subject);
+        console.log('Body:', emailData.text || emailData.html);
+        
+        // Process the incoming email
+        // You can add logic here to handle different types of emails
+        // For example: support requests, password reset requests, etc.
+        
+        // Store in database if needed
+        db.run(
+            'INSERT INTO incoming_emails (from_email, to_email, subject, body, received_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)',
+            [
+                emailData.from || emailData.sender,
+                emailData.to || emailData.recipient,
+                emailData.subject,
+                emailData.text || emailData.html || ''
+            ],
+            (err) => {
+                if (err) {
+                    console.error('Error storing incoming email:', err);
+                } else {
+                    console.log('Incoming email stored in database');
+                }
+            }
+        );
+        
+        res.status(200).json({ received: true, message: 'Email received and processed' });
+    } catch (error) {
+        console.error('Error processing incoming email:', error);
+        res.status(500).json({ error: 'Failed to process email' });
+    }
+});
+
+// Get received emails
+app.get('/api/incoming-emails', (req, res) => {
+    db.all(
+        'SELECT * FROM incoming_emails ORDER BY received_at DESC LIMIT 50',
+        [],
+        (err, emails) => {
+            if (err) {
+                return res.status(500).json({ error: 'Failed to fetch emails' });
+            }
+            res.json(emails);
+        }
+    );
 });
 
 // Start HTTPS server if certificates are provided
