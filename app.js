@@ -619,24 +619,25 @@ class BankApp {
         e.preventDefault();
         const username = document.getElementById('resetUsername').value;
         const email = document.getElementById('resetEmail').value;
-        const newPassword = document.getElementById('resetNewPassword').value;
-
-        if (newPassword.length < 4) {
-            this.showNotification('Password must be at least 4 characters', 'error');
-            return;
-        }
 
         try {
             const response = await fetch('http://localhost:3000/api/reset-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, email, newPassword })
+                body: JSON.stringify({ username, email })
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                this.showNotification('Password reset successfully! You can now log in with your new password.', 'success');
+                if (data.emailSent) {
+                    this.showNotification('Temporary password sent to ' + data.email + '. Please check your email and log in to change it.', 'success');
+                } else if (data.tempPassword) {
+                    // Fallback if email service not configured
+                    this.showNotification('Temporary password: ' + data.tempPassword, 'success');
+                } else {
+                    this.showNotification(data.message || 'Password reset email sent', 'success');
+                }
                 this.closeForgotPasswordModal();
             } else {
                 this.showNotification(data.error || 'Reset failed', 'error');

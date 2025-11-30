@@ -497,14 +497,10 @@ app.delete('/api/delete-account', (req, res) => {
 
 // Reset password
 app.post('/api/reset-password', async (req, res) => {
-    const { username, email, newPassword } = req.body;
+    const { username, email } = req.body;
 
-    if (!username || !email || !newPassword) {
-        return res.status(400).json({ error: 'Username, email, and new password are required' });
-    }
-
-    if (newPassword.length < 4) {
-        return res.status(400).json({ error: 'Password must be at least 4 characters' });
+    if (!username || !email) {
+        return res.status(400).json({ error: 'Username and email are required' });
     }
 
     db.get('SELECT * FROM users WHERE username = ?', [username], async (err, user) => {
@@ -522,8 +518,9 @@ app.post('/api/reset-password', async (req, res) => {
         }
 
         try {
-            // Hash the new password
-            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            // Generate temporary password
+            const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8).replace(/[0-9]/g, '').substring(0, 2);
+            const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
             // Update user password
             db.run(
@@ -535,23 +532,31 @@ app.post('/api/reset-password', async (req, res) => {
                     }
 
                     console.log(`Password reset for user: ${username}`);
-                    console.log(`Sending confirmation email to: ${user.email}`);
+                    console.log(`Sending temporary password email to: ${user.email}`);
+                    console.log(`Email transporter available: ${transporter ? 'Yes' : 'No'}`);
 
-                    // Send confirmation email
+                    // Send email with temporary password
                     const fromEmail = process.env.EMAIL_SERVICE === 'resend' 
                         ? process.env.EMAIL_USER 
                         : (process.env.EMAIL_USER || 'Red Diamond Bank <noreply@reddiamondbank.com>');
+                    
+                    console.log(`From email: ${fromEmail}`);
+                    console.log(`To email: ${user.email}`);
+                    
                     const mailOptions = {
                         from: fromEmail,
                         to: user.email,
-                        subject: 'Red Diamond Bank - Password Reset Confirmation',
+                        subject: 'Red Diamond Bank - Password Reset',
                         html: `
                             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                                 <h2 style="color: #dc143c;">🔴 Red Diamond Bank</h2>
-                                <h3>Password Reset Confirmation</h3>
+                                <h3>Password Reset Request</h3>
                                 <p>Hello ${username},</p>
-                                <p>Your password has been successfully reset.</p>
-                                <p>You can now log in with your new password.</p>
+                                <p>Your temporary password is:</p>
+                                <div style="background: #f5f5f5; padding: 15px; border-left: 4px solid #dc143c; margin: 20px 0;">
+                                    <code style="font-size: 18px; font-weight: bold;">${tempPassword}</code>
+                                </div>
+                                <p>Please use this temporary password to log in, then change it immediately using the "Change Password" button in your dashboard.</p>
                                 <p style="color: #666; font-size: 12px; margin-top: 30px;">
                                     If you did not request this password reset, please contact support immediately.
                                 </p>
@@ -561,20 +566,47 @@ app.post('/api/reset-password', async (req, res) => {
 
                     if (transporter) {
                         try {
+                            console.log('Attempting to send email...');
                             const info = await transporter.sendMail(mailOptions);
-                            console.log('Confirmation email sent successfully:', info.messageId);
+                            console.log('Temporary password email sent successfully!');
+                            console.log('Message ID:', info.messageId);
+                            console.log('Response:', info.response);
+                            res.json({
+                                message: 'Temporary password sent to ' + user.email,
+                                emailSent: true,
+                                email: user.email
+                            });
                         } catch (emailError) {
-                            console.error('Email send failed:', emailError.message);
-                            // Don't fail the request if email fails - password is already reset
+                            console.error('Email send failed:');
+                            console.error('Error:', emailError);
+                            console.error('Error message:', emailError.message);
+                            console.error('Error code:', emailError.code);
+                            console.error('Error response:', emailError.response);
+                            // Email failed, return temp password as fallback
+                            res.json({
+                                message: 'Email service error. Your temporary password: ' + tempPassword,
+                                emailSent: false,
+                                tempPassword: tempPassword,
+                                emailError: emailError.message || 'Unknown error',
+                                email: user.email
+                            });
                         }
+                    } else {
+                        console.error('Email transporter is not configured!');
+                        console.error('Check your .env file for EMAIL_USER and EMAIL_PASS');
+                        // Return temp password if email not configured
+                        res.json({
+                            message: 'Email service not configured. Your temporary password: ' + tempPassword,
+                            emailSent: false,
+                            tempPassword: tempPassword,
+                            emailError: 'Email service not configured',
+                            email: user.email
+                        });
                     }
-
-                    res.json({
-                        message: 'Password reset successfully'
-                    });
                 }
             );
         } catch (error) {
+            console.error('Password reset error:', error);
             res.status(500).json({ error: 'Server error' });
         }
     });

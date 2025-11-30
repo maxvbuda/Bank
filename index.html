@@ -71,7 +71,7 @@
                     <div class="modal-content modal-popup">
                         <button class="modal-close" id="closeModalBtn" aria-label="Close">×</button>
                         <h2>🔐 Reset Password</h2>
-                        <p>Enter your username, email, and new password to reset your account.</p>
+                        <p>Enter your username and email to receive a temporary password via email.</p>
                         <form id="forgotPasswordForm">
                             <div class="form-group">
                                 <label for="resetUsername">Username</label>
@@ -81,12 +81,8 @@
                                 <label for="resetEmail">Email</label>
                                 <input type="email" id="resetEmail" required>
                             </div>
-                            <div class="form-group">
-                                <label for="resetNewPassword">New Password</label>
-                                <input type="password" id="resetNewPassword" required minlength="4">
-                            </div>
                             <div style="display: flex; gap: 10px;">
-                                <button type="submit" class="btn-primary">Reset Password</button>
+                                <button type="submit" class="btn-primary">Send Temporary Password</button>
                                 <button type="button" class="btn-secondary" id="closeModalBtn2">Cancel</button>
                             </div>
                         </form>

@@ -1,5 +1,6 @@
+[dotenv@17.2.3] injecting env (5) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+Email service configured (Resend SMTP)
 🏦 Red Diamond Bank server running on http://localhost:3000
 💎 Currency: Red Diamonds ◆
 Connected to SQLite database
 Database tables initialized
-Password changed for user: Max
