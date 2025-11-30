@@ -64,6 +64,11 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true })); // For webhook form data
 app.use(express.static(__dirname));
 
+// Favicon route - serve SVG favicon for .ico requests too
+app.get('/favicon.ico', (req, res) => {
+    res.sendFile(__dirname + '/favicon.svg');
+});
+
 // Database setup
 const db = new sqlite3.Database('./bank.db', (err) => {
     if (err) {

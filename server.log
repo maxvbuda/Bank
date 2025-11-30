@@ -4,3 +4,54 @@ Email service configured (Resend API)
 💎 Currency: Red Diamonds ◆
 Connected to SQLite database
 Database tables initialized
+Mail sent via Resend: 54a58f78-00ed-42e2-b3b9-5cba774f7fa8
+Resend webhook received: email.sent
+Email sent: {
+  created_at: '2025-11-30T22:59:21.961Z',
+  email_id: '54a58f78-00ed-42e2-b3b9-5cba774f7fa8',
+  from: 'Red Diamond Bank <mail@reddiamondbank.com>',
+  subject: '[Red Diamond Bank] This is my reddiamondbank email service!',
+  to: [ 'nvachhar@gmail.com' ]
+}
+Resend webhook received: email.delivered
+Email delivered: {
+  created_at: '2025-11-30T22:59:21.961Z',
+  email_id: '54a58f78-00ed-42e2-b3b9-5cba774f7fa8',
+  from: 'Red Diamond Bank <mail@reddiamondbank.com>',
+  subject: '[Red Diamond Bank] This is my reddiamondbank email service!',
+  to: [ 'nvachhar@gmail.com' ]
+}
+Mail sent via Resend: 401ef651-d444-4298-ab8d-3a05e68a16b7
+Resend webhook received: email.sent
+Email sent: {
+  created_at: '2025-11-30T23:08:16.514Z',
+  email_id: '401ef651-d444-4298-ab8d-3a05e68a16b7',
+  from: 'Red Diamond Bank <mail@reddiamondbank.com>',
+  subject: '[Red Diamond Bank] are you support?',
+  to: [ 'nvachhar@gmail.com' ]
+}
+Resend webhook received: email.delivered
+Email delivered: {
+  created_at: '2025-11-30T23:08:16.514Z',
+  email_id: '401ef651-d444-4298-ab8d-3a05e68a16b7',
+  from: 'Red Diamond Bank <mail@reddiamondbank.com>',
+  subject: '[Red Diamond Bank] are you support?',
+  to: [ 'nvachhar@gmail.com' ]
+}
+Mail sent via Resend: d439ff72-0c08-43bd-95aa-f3e4cd482084
+Resend webhook received: email.delivered
+Email delivered: {
+  created_at: '2025-11-30T23:10:07.959Z',
+  email_id: 'd439ff72-0c08-43bd-95aa-f3e4cd482084',
+  from: 'Red Diamond Bank <mail@reddiamondbank.com>',
+  subject: '[Red Diamond Bank] Do you like my email service?',
+  to: [ 'madhukarvach@gmail.com' ]
+}
+Resend webhook received: email.sent
+Email sent: {
+  created_at: '2025-11-30T23:10:07.959Z',
+  email_id: 'd439ff72-0c08-43bd-95aa-f3e4cd482084',
+  from: 'Red Diamond Bank <mail@reddiamondbank.com>',
+  subject: '[Red Diamond Bank] Do you like my email service?',
+  to: [ 'madhukarvach@gmail.com' ]
+}
