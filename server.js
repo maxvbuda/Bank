@@ -86,6 +86,109 @@ app.get('/favicon.ico', (req, res) => {
     res.sendFile(__dirname + '/favicon.svg');
 });
 
+// Send Marketing Email to All Users
+app.post('/api/send-marketing-email', async (req, res) => {
+    const { subject, body, includeAll } = req.body;
+    
+    if (!subject || !body) {
+        return res.status(400).json({ error: 'Subject and body are required' });
+    }
+    
+    const fromEmail = 'Red Diamond Bank <mail@reddiamondbank.com>';
+    
+    // Get all users
+    db.all('SELECT id, username, email FROM users', [], async (err, users) => {
+        if (err) {
+            console.error('Error fetching users:', err);
+            return res.status(500).json({ error: 'Failed to fetch users' });
+        }
+        
+        if (!users || users.length === 0) {
+            return res.status(400).json({ error: 'No users found' });
+        }
+        
+        let sentCount = 0;
+        let failedCount = 0;
+        const errors = [];
+        
+        // Email HTML template
+        const emailHtml = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #dc143c; margin: 0;">🔴 Red Diamond Bank</h1>
+                </div>
+                <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 4px solid #dc143c;">
+                    ${body}
+                </div>
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 12px;">
+                    <p>You're receiving this email because you have an account with Red Diamond Bank.</p>
+                    <p>If you'd like to stop receiving marketing emails, please contact support.</p>
+                </div>
+            </div>
+        `;
+        
+        // Send emails to all users
+        for (const user of users) {
+            try {
+                if (resendClient) {
+                    // Use Resend API
+                    const { data, error } = await resendClient.emails.send({
+                        from: fromEmail,
+                        to: user.email,
+                        subject: subject,
+                        html: emailHtml
+                    });
+                    
+                    if (error) {
+                        throw error;
+                    }
+                    
+                    console.log(`Marketing email sent to ${user.email} (${user.username})`);
+                    sentCount++;
+                } else if (transporter) {
+                    // Use SMTP
+                    const mailOptions = {
+                        from: fromEmail,
+                        to: user.email,
+                        subject: subject,
+                        html: emailHtml
+                    };
+                    
+                    const info = await transporter.sendMail(mailOptions);
+                    console.log(`Marketing email sent to ${user.email} (${user.username}) - Message ID: ${info.messageId}`);
+                    sentCount++;
+                } else {
+                    throw new Error('Email service not configured');
+                }
+                
+                // Small delay to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 100));
+            } catch (error) {
+                console.error(`Failed to send marketing email to ${user.email}:`, error);
+                failedCount++;
+                errors.push({ email: user.email, error: error.message });
+            }
+        }
+        
+        console.log(`Marketing email campaign completed: ${sentCount} sent, ${failedCount} failed`);
+        
+        if (sentCount === 0) {
+            return res.status(500).json({ 
+                error: 'Failed to send any marketing emails',
+                details: errors
+            });
+        }
+        
+        res.json({
+            message: `Marketing emails sent successfully`,
+            sentCount: sentCount,
+            failedCount: failedCount,
+            totalUsers: users.length,
+            errors: errors.length > 0 ? errors : undefined
+        });
+    });
+});
+
 // Database setup
 const db = new sqlite3.Database('./bank.db', (err) => {
     if (err) {
@@ -105,9 +208,19 @@ function initializeDatabase() {
             password TEXT NOT NULL,
             email TEXT NOT NULL,
             balance REAL DEFAULT 0,
+            codename TEXT,
+            contact_email TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
+    
+    // Add codename and contact_email columns if they don't exist (for existing databases)
+    db.run(`ALTER TABLE users ADD COLUMN codename TEXT`, (err) => {
+        // Ignore error if column already exists
+    });
+    db.run(`ALTER TABLE users ADD COLUMN contact_email TEXT`, (err) => {
+        // Ignore error if column already exists
+    });
 
     db.run(`
         CREATE TABLE IF NOT EXISTS purchases (
@@ -310,6 +423,55 @@ app.get('/api/balance/:userId', (req, res) => {
 
         res.json({ balance: user.balance });
     });
+});
+
+// Get user profile
+app.get('/api/profile/:userId', (req, res) => {
+    const { userId } = req.params;
+    
+    db.get('SELECT id, username, codename, contact_email FROM users WHERE id = ?', [userId], (err, user) => {
+        if (err) {
+            console.error('Error fetching profile:', err);
+            return res.status(500).json({ error: 'Server error' });
+        }
+        
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        res.json({ user: user });
+    });
+});
+
+// Update user profile
+app.put('/api/profile/:userId', (req, res) => {
+    const { userId } = req.params;
+    const { codename, contact_email } = req.body;
+    
+    // Validate email format if provided
+    if (contact_email && contact_email.trim() !== '') {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(contact_email)) {
+            return res.status(400).json({ error: 'Invalid email format' });
+        }
+    }
+    
+    db.run(
+        'UPDATE users SET codename = ?, contact_email = ? WHERE id = ?',
+        [codename || null, contact_email || null, userId],
+        function(err) {
+            if (err) {
+                console.error('Error updating profile:', err);
+                return res.status(500).json({ error: 'Failed to update profile' });
+            }
+            
+            if (this.changes === 0) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            
+            res.json({ message: 'Profile updated successfully' });
+        }
+    );
 });
 
 // Mine diamonds (game reward)

@@ -32,6 +32,11 @@ class BankApp {
         document.getElementById('closeChangePasswordBtn2').addEventListener('click', () => this.closeChangePasswordModal());
         document.getElementById('changePasswordForm').addEventListener('submit', (e) => this.handleChangePassword(e));
         
+        // Profile
+        document.getElementById('editProfileBtn').addEventListener('click', () => this.showEditProfile());
+        document.getElementById('cancelEditProfileBtn').addEventListener('click', () => this.hideEditProfile());
+        document.getElementById('profileForm').addEventListener('submit', (e) => this.handleUpdateProfile(e));
+        
         // Shop
         document.getElementById('shopBtn').addEventListener('click', () => this.showShop());
         document.getElementById('closeShopBtn').addEventListener('click', () => this.closeShop());
@@ -59,6 +64,194 @@ class BankApp {
         
         // Keyboard shortcut for diamond symbol (Command+D on Mac, Ctrl+D on Windows/Linux)
         this.initializeDiamondShortcut();
+        
+        // Secret marketing email feature (Ctrl+Shift+M)
+        this.initializeMarketingEmail();
+    }
+    
+    initializeMarketingEmail() {
+        // Secret keyboard shortcut: Ctrl+Shift+M (or Cmd+Shift+M on Mac)
+        let marketingKeySequence = [];
+        document.addEventListener('keydown', (e) => {
+            // Check for Ctrl+Shift+M or Cmd+Shift+M
+            if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'm' || e.key === 'M')) {
+                e.preventDefault();
+                // Only show if user is logged in
+                if (this.currentUser) {
+                    this.showMarketingEmailModal();
+                }
+            }
+        });
+        
+        // Close modal handlers
+        const closeBtn = document.getElementById('closeMarketingModal');
+        const cancelBtn = document.getElementById('cancelMarketingBtn');
+        const modal = document.getElementById('marketingEmailModal');
+        
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => this.closeMarketingEmailModal());
+        }
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => this.closeMarketingEmailModal());
+        }
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    this.closeMarketingEmailModal();
+                }
+            });
+        }
+        
+        // Form submission
+        const form = document.getElementById('marketingEmailForm');
+        if (form) {
+            form.addEventListener('submit', (e) => this.handleSendMarketingEmail(e));
+        }
+        
+        // Preview button
+        const previewBtn = document.getElementById('previewMarketingBtn');
+        if (previewBtn) {
+            previewBtn.addEventListener('click', () => this.showEmailPreview());
+        }
+        
+        // Close preview handlers
+        const closePreviewBtn = document.getElementById('closePreviewBtn');
+        const closePreviewModal = document.getElementById('closePreviewModal');
+        const previewModal = document.getElementById('emailPreviewModal');
+        
+        if (closePreviewBtn) {
+            closePreviewBtn.addEventListener('click', () => this.closeEmailPreview());
+        }
+        if (closePreviewModal) {
+            closePreviewModal.addEventListener('click', () => this.closeEmailPreview());
+        }
+        if (previewModal) {
+            previewModal.addEventListener('click', (e) => {
+                if (e.target === previewModal) {
+                    this.closeEmailPreview();
+                }
+            });
+        }
+    }
+    
+    showEmailPreview() {
+        const subject = document.getElementById('marketingSubject').value;
+        const body = document.getElementById('marketingBody').value;
+        const includeAll = document.getElementById('includeAllUsers').checked;
+        
+        if (!subject || !body) {
+            this.showNotification('Please fill in subject and body to preview', 'error');
+            return;
+        }
+        
+        // Update preview modal
+        document.getElementById('previewSubject').textContent = subject;
+        document.getElementById('previewTo').textContent = includeAll ? 'All Registered Users' : 'Selected Users';
+        
+        // Create email HTML using the same template as the server
+        const emailHtml = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #dc143c; margin: 0;">🔴 Red Diamond Bank</h1>
+                </div>
+                <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 4px solid #dc143c;">
+                    ${body}
+                </div>
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 12px;">
+                    <p>You're receiving this email because you have an account with Red Diamond Bank.</p>
+                    <p>If you'd like to stop receiving marketing emails, please contact support.</p>
+                </div>
+            </div>
+        `;
+        
+        // Set preview content
+        document.getElementById('previewEmailContent').innerHTML = emailHtml;
+        
+        // Show preview modal
+        document.getElementById('emailPreviewModal').style.display = 'flex';
+    }
+    
+    closeEmailPreview() {
+        document.getElementById('emailPreviewModal').style.display = 'none';
+    }
+    
+    showMarketingEmailModal() {
+        const modal = document.getElementById('marketingEmailModal');
+        if (modal) {
+            modal.style.display = 'flex';
+        }
+    }
+    
+    closeMarketingEmailModal() {
+        const modal = document.getElementById('marketingEmailModal');
+        if (modal) {
+            modal.style.display = 'none';
+            document.getElementById('marketingEmailForm').reset();
+            const status = document.getElementById('marketingEmailStatus');
+            if (status) {
+                status.style.display = 'none';
+                status.textContent = '';
+            }
+        }
+    }
+    
+    async handleSendMarketingEmail(e) {
+        e.preventDefault();
+        
+        const subject = document.getElementById('marketingSubject').value;
+        const body = document.getElementById('marketingBody').value;
+        const includeAll = document.getElementById('includeAllUsers').checked;
+        const sendBtn = document.getElementById('sendMarketingBtn');
+        const status = document.getElementById('marketingEmailStatus');
+        
+        if (!subject || !body) {
+            this.showNotification('Please fill in all fields', 'error');
+            return;
+        }
+        
+        // Confirm before sending
+        if (!confirm(`Are you sure you want to send this marketing email ${includeAll ? 'to ALL users' : ''}? This action cannot be undone!`)) {
+            return;
+        }
+        
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Sending...';
+        status.style.display = 'block';
+        status.innerHTML = '<p style="color: #4CAF50;">⏳ Sending marketing emails...</p>';
+        
+        try {
+            const response = await fetch('http://localhost:3000/api/send-marketing-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    subject: subject,
+                    body: body,
+                    includeAll: includeAll
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                status.innerHTML = `<p style="color: #4CAF50;">✅ Marketing email sent successfully to ${data.sentCount || 0} users!</p>`;
+                this.showNotification(`Marketing email sent to ${data.sentCount || 0} users!`, 'success');
+                
+                // Clear form after 2 seconds
+                setTimeout(() => {
+                    this.closeMarketingEmailModal();
+                }, 2000);
+            } else {
+                status.innerHTML = `<p style="color: #f44336;">❌ Error: ${data.error || 'Failed to send marketing email'}</p>`;
+                this.showNotification(data.error || 'Failed to send marketing email', 'error');
+            }
+        } catch (error) {
+            console.error('Marketing email error:', error);
+            status.innerHTML = `<p style="color: #f44336;">❌ Error: ${error.message}</p>`;
+            this.showNotification('Failed to send marketing email', 'error');
+        } finally {
+            sendBtn.disabled = false;
+            sendBtn.textContent = '📤 Send Marketing Email';
+        }
     }
     
     initializeDiamondShortcut() {
@@ -282,8 +475,89 @@ class BankApp {
         await this.loadBalance();
         await this.loadTransactions();
         await this.loadInventory();
+        await this.loadProfile();
         this.initializeGame();
         this.initializeHeistGame();
+    }
+    
+    async loadProfile() {
+        try {
+            const userId = localStorage.getItem('userId');
+            if (!userId) return;
+            
+            const response = await fetch(`http://localhost:3000/api/profile/${userId}`);
+            const data = await response.json();
+            
+            if (response.ok && data.user) {
+                const user = data.user;
+                document.getElementById('profileUsername').textContent = user.username;
+                document.getElementById('profileCodename').textContent = user.codename || 'Not set';
+                document.getElementById('profileContactEmail').textContent = user.contact_email || 'Not set';
+            }
+        } catch (error) {
+            console.error('Error loading profile:', error);
+        }
+    }
+    
+    showEditProfile() {
+        document.getElementById('profileSection').style.display = 'none';
+        document.getElementById('editProfileSection').style.display = 'block';
+        
+        // Load current values
+        const codename = document.getElementById('profileCodename').textContent;
+        const contactEmail = document.getElementById('profileContactEmail').textContent;
+        
+        document.getElementById('editCodename').value = codename === 'Not set' ? '' : codename;
+        document.getElementById('editContactEmail').value = contactEmail === 'Not set' ? '' : contactEmail;
+    }
+    
+    hideEditProfile() {
+        document.getElementById('profileSection').style.display = 'block';
+        document.getElementById('editProfileSection').style.display = 'none';
+        document.getElementById('profileUpdateStatus').style.display = 'none';
+    }
+    
+    async handleUpdateProfile(e) {
+        e.preventDefault();
+        
+        const userId = localStorage.getItem('userId');
+        const codename = document.getElementById('editCodename').value.trim();
+        const contactEmail = document.getElementById('editContactEmail').value.trim();
+        const statusDiv = document.getElementById('profileUpdateStatus');
+        
+        try {
+            const response = await fetch(`http://localhost:3000/api/profile/${userId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    codename: codename || null,
+                    contact_email: contactEmail || null
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                statusDiv.style.display = 'block';
+                statusDiv.innerHTML = '<p style="color: #4CAF50;">✅ Profile updated successfully!</p>';
+                this.showNotification('Profile updated successfully!', 'success');
+                
+                // Reload profile and hide edit form after 1 second
+                setTimeout(async () => {
+                    await this.loadProfile();
+                    this.hideEditProfile();
+                }, 1000);
+            } else {
+                statusDiv.style.display = 'block';
+                statusDiv.innerHTML = `<p style="color: #f44336;">❌ Error: ${data.error || 'Failed to update profile'}</p>`;
+                this.showNotification(data.error || 'Failed to update profile', 'error');
+            }
+        } catch (error) {
+            console.error('Profile update error:', error);
+            statusDiv.style.display = 'block';
+            statusDiv.innerHTML = '<p style="color: #f44336;">❌ Network error. Please try again.</p>';
+            this.showNotification('Network error. Please try again.', 'error');
+        }
     }
 
     async loadBalance() {
