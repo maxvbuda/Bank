@@ -252,6 +252,24 @@ body {
     box-shadow: 0 5px 20px rgba(65, 105, 225, 0.4);
 }
 
+.btn-purchase {
+    padding: 8px 20px;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    border: 2px solid #4CAF50;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: bold;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-purchase:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
+}
+
 .mail-list {
     max-height: 400px;
     overflow-y: auto;

@@ -56,6 +56,43 @@ class BankApp {
         document.getElementById('closeModalBtn').addEventListener('click', () => this.closeForgotPasswordModal());
         document.getElementById('closeModalBtn2').addEventListener('click', () => this.closeForgotPasswordModal());
         document.getElementById('forgotPasswordForm').addEventListener('submit', (e) => this.handleForgotPassword(e));
+        
+        // Keyboard shortcut for diamond symbol (Command+D on Mac, Ctrl+D on Windows/Linux)
+        this.initializeDiamondShortcut();
+    }
+    
+    initializeDiamondShortcut() {
+        document.addEventListener('keydown', (e) => {
+            // Command+D (Mac) or Ctrl+D (Windows/Linux) to insert diamond symbol
+            // Check for metaKey (Command on Mac) or ctrlKey (Ctrl on Windows/Linux)
+            if ((e.metaKey || e.ctrlKey) && (e.key === 'd' || e.key === 'D')) {
+                const activeElement = document.activeElement;
+                
+                // Check if the active element is a text input or textarea
+                if (activeElement && (
+                    activeElement.tagName === 'INPUT' && 
+                    (activeElement.type === 'text' || activeElement.type === 'email' || !activeElement.type)
+                ) || activeElement.tagName === 'TEXTAREA') {
+                    e.preventDefault();
+                    
+                    // Get cursor position
+                    const start = activeElement.selectionStart;
+                    const end = activeElement.selectionEnd;
+                    const text = activeElement.value;
+                    
+                    // Insert diamond symbol at cursor position
+                    const newText = text.substring(0, start) + '◆' + text.substring(end);
+                    activeElement.value = newText;
+                    
+                    // Restore cursor position after the inserted symbol
+                    const newPosition = start + 1;
+                    activeElement.setSelectionRange(newPosition, newPosition);
+                    
+                    // Trigger input event for any listeners
+                    activeElement.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+        });
     }
 
     switchTab(tab) {
@@ -239,6 +276,7 @@ class BankApp {
         document.getElementById('changePasswordBtn').style.display = 'block';
         document.getElementById('shopBtn').style.display = 'block';
         document.getElementById('mailBtn').style.display = 'block';
+        document.getElementById('purchaseBtn').style.display = 'block';
         document.getElementById('testModeBtn').style.display = 'block';
 
         await this.loadBalance();
@@ -1856,6 +1894,13 @@ class BankApp {
     async showMail() {
         const modal = document.getElementById('mailModal');
         modal.style.display = 'flex';
+        
+        // Display user's nexmail address with creative format
+        const username = localStorage.getItem('username');
+        if (username) {
+            document.getElementById('userNexmailAddress').textContent = `${username}◆nexmail.diamond`;
+        }
+        
         this.showInboxView();
         await this.loadInbox();
         await this.loadSentMail();
@@ -1917,6 +1962,7 @@ class BankApp {
         const to = document.getElementById('mailTo').value;
         const subject = document.getElementById('mailSubject').value;
         const body = document.getElementById('mailBody').value;
+        const incognito = document.getElementById('incognitoCheckbox').checked;
 
         try {
             const response = await fetch('http://localhost:3000/api/mail/send', {
@@ -1926,19 +1972,21 @@ class BankApp {
                     userId: localStorage.getItem('userId'),
                     to: to,
                     subject: subject,
-                    body: body
+                    body: body,
+                    incognito: incognito
                 })
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                this.showNotification('Email sent successfully!', 'success');
+                this.showNotification(data.message || 'Nexmail sent successfully!', 'success');
                 document.getElementById('composeMailForm').reset();
+                document.getElementById('incognitoCheckbox').checked = false;
                 this.showSentView();
                 await this.loadSentMail();
             } else {
-                this.showNotification(data.error || 'Failed to send email', 'error');
+                this.showNotification(data.error || 'Failed to send nexmail', 'error');
             }
         } catch (error) {
             this.showNotification('Network error. Please try again.', 'error');
@@ -1952,20 +2000,35 @@ class BankApp {
             
             const inboxList = document.getElementById('inboxMailList');
             if (emails.length === 0) {
-                inboxList.innerHTML = '<p style="color: #888; text-align: center;">No emails yet</p>';
+                inboxList.innerHTML = '<p style="color: #888; text-align: center;">No nexmail yet</p>';
                 return;
             }
 
-            inboxList.innerHTML = emails.map(email => `
-                <div class="mail-item" style="padding: 15px; margin-bottom: 10px; background: rgba(220, 20, 60, 0.1); border-left: 3px solid var(--red-diamond); border-radius: 8px; cursor: pointer;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                        <strong style="color: var(--red-diamond);">${email.from_username || email.from_email}</strong>
-                        <span style="color: #888; font-size: 12px;">${new Date(email.sent_at).toLocaleDateString()}</span>
+            inboxList.innerHTML = emails.map(email => {
+                const isIncognito = email.incognito === 1 || email.incognito === true;
+                const senderDisplay = isIncognito 
+                    ? '🔒 Incognito Sender' 
+                    : (email.from_nexmail || `${email.from_username}◆nexmail.diamond`);
+                const isNexmailAddress = senderDisplay.includes('◆') || senderDisplay.includes('@');
+                
+                return `
+                    <div class="mail-item" style="padding: 15px; margin-bottom: 10px; background: rgba(220, 20, 60, 0.1); border-left: 3px solid var(--red-diamond); border-radius: 8px; cursor: pointer;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; align-items: center;">
+                            <div>
+                                ${isIncognito 
+                                    ? `<strong style="color: var(--red-diamond);">${senderDisplay}</strong>`
+                                    : `<strong style="color: var(--red-diamond); font-family: 'Courier New', monospace; text-shadow: 0 0 8px rgba(220, 20, 60, 0.4);">
+                                        ${isNexmailAddress ? '💎' : ''} ${senderDisplay}
+                                    </strong>`
+                                }
+                            </div>
+                            <span style="color: #888; font-size: 12px;">${new Date(email.sent_at).toLocaleDateString()}</span>
+                        </div>
+                        <div style="font-weight: bold; margin-bottom: 5px;">${email.subject}</div>
+                        <div style="color: #aaa; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${email.body}</div>
                     </div>
-                    <div style="font-weight: bold; margin-bottom: 5px;">${email.subject}</div>
-                    <div style="color: #aaa; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${email.body}</div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         } catch (error) {
             console.error('Failed to load inbox:', error);
         }
@@ -1978,20 +2041,33 @@ class BankApp {
             
             const sentList = document.getElementById('sentMailList');
             if (emails.length === 0) {
-                sentList.innerHTML = '<p style="color: #888; text-align: center;">No sent emails yet</p>';
+                sentList.innerHTML = '<p style="color: #888; text-align: center;">No sent nexmail yet</p>';
                 return;
             }
 
-            sentList.innerHTML = emails.map(email => `
-                <div class="mail-item" style="padding: 15px; margin-bottom: 10px; background: rgba(220, 20, 60, 0.1); border-left: 3px solid var(--red-diamond); border-radius: 8px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                        <strong style="color: var(--red-diamond);">To: ${email.to_username || email.to_email}</strong>
-                        <span style="color: #888; font-size: 12px;">${new Date(email.sent_at).toLocaleDateString()}</span>
+            sentList.innerHTML = emails.map(email => {
+                const isIncognito = email.incognito === 1 || email.incognito === true;
+                const incognitoBadge = isIncognito ? '<span style="background: rgba(128, 128, 128, 0.3); padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px;">🔒 Incognito</span>' : '';
+                const recipientDisplay = email.to_nexmail || `${email.to_username}◆nexmail.diamond`;
+                const isNexmailAddress = recipientDisplay.includes('◆') || recipientDisplay.includes('@');
+                
+                return `
+                    <div class="mail-item" style="padding: 15px; margin-bottom: 10px; background: rgba(220, 20, 60, 0.1); border-left: 3px solid var(--red-diamond); border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; align-items: center;">
+                            <div>
+                                <strong style="color: var(--red-diamond);">To: </strong>
+                                <strong style="color: var(--red-diamond); font-family: 'Courier New', monospace; text-shadow: 0 0 8px rgba(220, 20, 60, 0.4);">
+                                    ${isNexmailAddress ? '💎' : ''} ${recipientDisplay}
+                                </strong>
+                                ${incognitoBadge}
+                            </div>
+                            <span style="color: #888; font-size: 12px;">${new Date(email.sent_at).toLocaleDateString()}</span>
+                        </div>
+                        <div style="font-weight: bold; margin-bottom: 5px;">${email.subject}</div>
+                        <div style="color: #aaa; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${email.body}</div>
                     </div>
-                    <div style="font-weight: bold; margin-bottom: 5px;">${email.subject}</div>
-                    <div style="color: #aaa; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${email.body}</div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         } catch (error) {
             console.error('Failed to load sent mail:', error);
         }

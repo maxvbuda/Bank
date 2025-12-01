@@ -21,6 +21,7 @@
                 <button class="btn-test-mode" id="testModeBtn" style="display: none;">🔧 Test Mode: OFF</button>
                 <button class="btn-shop" id="shopBtn" style="display: none;">💎 Shop</button>
                 <button class="btn-mail" id="mailBtn" style="display: none;">📧 Mail</button>
+                <a href="pricing.html" class="btn-purchase" id="purchaseBtn" style="display: none; text-decoration: none; padding: 8px 20px; background: linear-gradient(135deg, #4CAF50, #45a049); border: 2px solid #4CAF50; color: white; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; font-weight: bold;">💰 Buy Diamonds</a>
                 <button class="btn-change-password" id="changePasswordBtn" style="display: none;">Change Password</button>
                 <button class="btn-logout" id="logoutBtn" style="display: none;">Logout</button>
                 <button class="btn-delete" id="deleteAccountBtn" style="display: none;">Delete Account</button>
@@ -198,11 +199,22 @@
             </div>
         </section>
 
-        <!-- Mail Service Modal -->
+        <!-- Nexmail Service Modal -->
         <div class="modal-overlay modal-fixed" id="mailModal" style="display: none;">
             <div class="modal-content modal-popup" style="max-width: 800px;">
                 <button class="modal-close" id="closeMailBtn" aria-label="Close">×</button>
-                <h2>📧 Bank Mail Service</h2>
+                <h2>📧 Nexmail Service</h2>
+                <div style="background: linear-gradient(135deg, rgba(220, 20, 60, 0.1), rgba(255, 20, 147, 0.1)); padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 2px solid rgba(220, 20, 60, 0.3);">
+                    <p style="color: #aaa; font-size: 12px; margin: 0 0 5px 0; text-align: center;">
+                        💎 Your Nexmail Address 💎
+                    </p>
+                    <p style="color: var(--red-diamond); font-size: 18px; margin: 0; text-align: center; font-family: 'Courier New', monospace; font-weight: bold; text-shadow: 0 0 10px rgba(220, 20, 60, 0.5);">
+                        <strong id="userNexmailAddress">-</strong>
+                    </p>
+                    <p style="color: #888; font-size: 10px; margin: 8px 0 0 0; text-align: center;">
+                        ⌨️ Keyboard shortcut: <kbd style="background: rgba(220, 20, 60, 0.2); padding: 2px 6px; border-radius: 3px; font-size: 10px;">⌘+D</kbd> (Mac) or <kbd style="background: rgba(220, 20, 60, 0.2); padding: 2px 6px; border-radius: 3px; font-size: 10px;">Ctrl+D</kbd> (Windows/Linux) to insert ◆
+                    </p>
+                </div>
                 
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                     <button class="btn-primary" id="composeMailBtn" style="flex: 1;">✉️ Compose</button>
@@ -214,8 +226,13 @@
                 <div id="composeMailView" style="display: none;">
                     <form id="composeMailForm">
                         <div class="form-group">
-                            <label for="mailTo">To (Username or Email)</label>
-                            <input type="text" id="mailTo" required placeholder="Enter username or email address">
+                            <label for="mailTo">To (Nexmail Address)</label>
+                            <input type="text" id="mailTo" required placeholder="username◆nexmail.diamond or username">
+                            <small style="color: #888; font-size: 12px; display: block; margin-top: 5px;">
+                                💎 Enter a nexmail address (e.g., <code style="color: var(--red-diamond);">username◆nexmail.diamond</code>) or just the username
+                                <br>
+                                <span style="color: var(--red-diamond); font-size: 11px;">⌨️ Tip: Press ⌘+D (Mac) or Ctrl+D (Windows/Linux) to insert ◆ quickly!</span>
+                            </small>
                         </div>
                         <div class="form-group">
                             <label for="mailSubject">Subject</label>
@@ -225,8 +242,14 @@
                             <label for="mailBody">Message</label>
                             <textarea id="mailBody" rows="8" required placeholder="Type your message here..." style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(220, 20, 60, 0.3); background: rgba(22, 33, 62, 0.5); color: var(--text-light); font-family: inherit; resize: vertical;"></textarea>
                         </div>
+                        <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                            <input type="checkbox" id="incognitoCheckbox" style="width: 20px; height: 20px; cursor: pointer;">
+                            <label for="incognitoCheckbox" style="cursor: pointer; margin: 0; font-size: 14px; color: var(--text-light);">
+                                🔒 Send as Incognito (Hide your identity from recipient)
+                            </label>
+                        </div>
                         <div style="display: flex; gap: 10px;">
-                            <button type="submit" class="btn-primary">📧 Send Email</button>
+                            <button type="submit" class="btn-primary">📧 Send Nexmail</button>
                             <button type="button" class="btn-secondary" id="cancelComposeBtn">Cancel</button>
                         </div>
                     </form>
@@ -236,7 +259,7 @@
                 <div id="inboxMailView" style="display: none;">
                     <h3>📥 Inbox</h3>
                     <div id="inboxMailList" class="mail-list">
-                        <p style="color: #888; text-align: center;">No emails yet</p>
+                        <p style="color: #888; text-align: center;">No nexmail yet</p>
                     </div>
                 </div>
 
@@ -244,7 +267,15 @@
                 <div id="sentMailView" style="display: none;">
                     <h3>📤 Sent</h3>
                     <div id="sentMailList" class="mail-list">
-                        <p style="color: #888; text-align: center;">No sent emails yet</p>
+                        <p style="color: #888; text-align: center;">No sent nexmail yet</p>
+                    </div>
+                </div>
+
+                <!-- Email Detail View -->
+                <div id="emailDetailView" style="display: none;">
+                    <button class="btn-secondary" id="backToMailBtn" style="margin-bottom: 15px;">← Back</button>
+                    <div id="emailDetailContent">
+                        <!-- Email details will be loaded here -->
                     </div>
                 </div>
             </div>

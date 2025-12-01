@@ -1,57 +1,199 @@
-[dotenv@17.2.3] injecting env (5) from .env -- tip: ⚙️  override existing env vars with { override: true }
+[dotenv@17.2.3] injecting env (8) from .env -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
 Email service configured (Resend API)
+✅ Stripe payment processing enabled
 🏦 Red Diamond Bank server running on http://localhost:3000
 💎 Currency: Red Diamonds ◆
 Connected to SQLite database
 Database tables initialized
-Mail sent via Resend: 54a58f78-00ed-42e2-b3b9-5cba774f7fa8
-Resend webhook received: email.sent
-Email sent: {
-  created_at: '2025-11-30T22:59:21.961Z',
-  email_id: '54a58f78-00ed-42e2-b3b9-5cba774f7fa8',
-  from: 'Red Diamond Bank <mail@reddiamondbank.com>',
-  subject: '[Red Diamond Bank] This is my reddiamondbank email service!',
-  to: [ 'nvachhar@gmail.com' ]
+Stripe error: StripeAuthenticationError: Invalid API Key provided: sk_test_***********************************************************************************************12tD
+    at res.toJSON.then.Error_js_1.StripeAPIError.message (/Users/maxbuda/Documents /GitHub/bank/node_modules/stripe/cjs/RequestSender.js:102:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+  type: 'StripeAuthenticationError',
+  raw: {
+    message: 'Invalid API Key provided: sk_test_***********************************************************************************************12tD',
+    type: 'invalid_request_error',
+    headers: {
+      server: 'nginx',
+      date: 'Mon, 01 Dec 2025 01:16:45 GMT',
+      'content-type': 'application/json',
+      'content-length': '209',
+      connection: 'keep-alive',
+      'access-control-allow-credentials': 'true',
+      'access-control-allow-methods': 'GET, HEAD, PUT, PATCH, POST, DELETE',
+      'access-control-allow-origin': '*',
+      'access-control-expose-headers': 'Request-Id, Stripe-Manage-Version, Stripe-Should-Retry, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required',
+      'access-control-max-age': '300',
+      'cache-control': 'no-cache, no-store',
+      'content-security-policy': "base-uri 'none'; default-src 'none'; form-action 'none'; frame-ancestors 'none'; img-src 'self'; script-src 'self' 'report-sample'; style-src 'self'; worker-src 'none'; upgrade-insecure-requests; report-uri https://q.stripe.com/csp-violation?q=-Q3uBi2BRNj08gtk7V-dcWmMf8sF-uSFL_Z72TrSWwLEVQvVRVzUO_LP2NES9xpiVHUGyhGLqgCIhkHO",
+      vary: 'Origin',
+      'www-authenticate': 'Bearer realm="Stripe"',
+      'x-robots-tag': 'none',
+      'x-wc': 'ABHIJ',
+      'strict-transport-security': 'max-age=63072000; includeSubDomains; preload'
+    },
+    statusCode: 401,
+    requestId: undefined
+  },
+  rawType: 'invalid_request_error',
+  code: undefined,
+  doc_url: undefined,
+  param: undefined,
+  detail: undefined,
+  headers: {
+    server: 'nginx',
+    date: 'Mon, 01 Dec 2025 01:16:45 GMT',
+    'content-type': 'application/json',
+    'content-length': '209',
+    connection: 'keep-alive',
+    'access-control-allow-credentials': 'true',
+    'access-control-allow-methods': 'GET, HEAD, PUT, PATCH, POST, DELETE',
+    'access-control-allow-origin': '*',
+    'access-control-expose-headers': 'Request-Id, Stripe-Manage-Version, Stripe-Should-Retry, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required',
+    'access-control-max-age': '300',
+    'cache-control': 'no-cache, no-store',
+    'content-security-policy': "base-uri 'none'; default-src 'none'; form-action 'none'; frame-ancestors 'none'; img-src 'self'; script-src 'self' 'report-sample'; style-src 'self'; worker-src 'none'; upgrade-insecure-requests; report-uri https://q.stripe.com/csp-violation?q=-Q3uBi2BRNj08gtk7V-dcWmMf8sF-uSFL_Z72TrSWwLEVQvVRVzUO_LP2NES9xpiVHUGyhGLqgCIhkHO",
+    vary: 'Origin',
+    'www-authenticate': 'Bearer realm="Stripe"',
+    'x-robots-tag': 'none',
+    'x-wc': 'ABHIJ',
+    'strict-transport-security': 'max-age=63072000; includeSubDomains; preload'
+  },
+  requestId: undefined,
+  statusCode: 401,
+  userMessage: undefined,
+  charge: undefined,
+  decline_code: undefined,
+  payment_intent: undefined,
+  payment_method: undefined,
+  payment_method_type: undefined,
+  setup_intent: undefined,
+  source: undefined
 }
-Resend webhook received: email.delivered
-Email delivered: {
-  created_at: '2025-11-30T22:59:21.961Z',
-  email_id: '54a58f78-00ed-42e2-b3b9-5cba774f7fa8',
-  from: 'Red Diamond Bank <mail@reddiamondbank.com>',
-  subject: '[Red Diamond Bank] This is my reddiamondbank email service!',
-  to: [ 'nvachhar@gmail.com' ]
+Stripe error: StripeAuthenticationError: Invalid API Key provided: sk_test_***********************************************************************************************12tD
+    at res.toJSON.then.Error_js_1.StripeAPIError.message (/Users/maxbuda/Documents /GitHub/bank/node_modules/stripe/cjs/RequestSender.js:102:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+  type: 'StripeAuthenticationError',
+  raw: {
+    message: 'Invalid API Key provided: sk_test_***********************************************************************************************12tD',
+    type: 'invalid_request_error',
+    headers: {
+      server: 'nginx',
+      date: 'Mon, 01 Dec 2025 01:16:49 GMT',
+      'content-type': 'application/json',
+      'content-length': '209',
+      connection: 'keep-alive',
+      'access-control-allow-credentials': 'true',
+      'access-control-allow-methods': 'GET, HEAD, PUT, PATCH, POST, DELETE',
+      'access-control-allow-origin': '*',
+      'access-control-expose-headers': 'Request-Id, Stripe-Manage-Version, Stripe-Should-Retry, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required',
+      'access-control-max-age': '300',
+      'cache-control': 'no-cache, no-store',
+      'content-security-policy': "base-uri 'none'; default-src 'none'; form-action 'none'; frame-ancestors 'none'; img-src 'self'; script-src 'self' 'report-sample'; style-src 'self'; worker-src 'none'; upgrade-insecure-requests; report-uri https://q.stripe.com/csp-violation?q=-Q3uBi2BRNj08gtk7V-dcWmMf8sF-uSFL_Z72TrSWwLEVQvVRVzUO_LP2NES9xpiVHUGyhGLqgCIhkHO",
+      vary: 'Origin',
+      'www-authenticate': 'Bearer realm="Stripe"',
+      'x-robots-tag': 'none',
+      'x-wc': 'ABHIJ',
+      'strict-transport-security': 'max-age=63072000; includeSubDomains; preload'
+    },
+    statusCode: 401,
+    requestId: undefined
+  },
+  rawType: 'invalid_request_error',
+  code: undefined,
+  doc_url: undefined,
+  param: undefined,
+  detail: undefined,
+  headers: {
+    server: 'nginx',
+    date: 'Mon, 01 Dec 2025 01:16:49 GMT',
+    'content-type': 'application/json',
+    'content-length': '209',
+    connection: 'keep-alive',
+    'access-control-allow-credentials': 'true',
+    'access-control-allow-methods': 'GET, HEAD, PUT, PATCH, POST, DELETE',
+    'access-control-allow-origin': '*',
+    'access-control-expose-headers': 'Request-Id, Stripe-Manage-Version, Stripe-Should-Retry, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required',
+    'access-control-max-age': '300',
+    'cache-control': 'no-cache, no-store',
+    'content-security-policy': "base-uri 'none'; default-src 'none'; form-action 'none'; frame-ancestors 'none'; img-src 'self'; script-src 'self' 'report-sample'; style-src 'self'; worker-src 'none'; upgrade-insecure-requests; report-uri https://q.stripe.com/csp-violation?q=-Q3uBi2BRNj08gtk7V-dcWmMf8sF-uSFL_Z72TrSWwLEVQvVRVzUO_LP2NES9xpiVHUGyhGLqgCIhkHO",
+    vary: 'Origin',
+    'www-authenticate': 'Bearer realm="Stripe"',
+    'x-robots-tag': 'none',
+    'x-wc': 'ABHIJ',
+    'strict-transport-security': 'max-age=63072000; includeSubDomains; preload'
+  },
+  requestId: undefined,
+  statusCode: 401,
+  userMessage: undefined,
+  charge: undefined,
+  decline_code: undefined,
+  payment_intent: undefined,
+  payment_method: undefined,
+  payment_method_type: undefined,
+  setup_intent: undefined,
+  source: undefined
 }
-Mail sent via Resend: 401ef651-d444-4298-ab8d-3a05e68a16b7
-Resend webhook received: email.sent
-Email sent: {
-  created_at: '2025-11-30T23:08:16.514Z',
-  email_id: '401ef651-d444-4298-ab8d-3a05e68a16b7',
-  from: 'Red Diamond Bank <mail@reddiamondbank.com>',
-  subject: '[Red Diamond Bank] are you support?',
-  to: [ 'nvachhar@gmail.com' ]
-}
-Resend webhook received: email.delivered
-Email delivered: {
-  created_at: '2025-11-30T23:08:16.514Z',
-  email_id: '401ef651-d444-4298-ab8d-3a05e68a16b7',
-  from: 'Red Diamond Bank <mail@reddiamondbank.com>',
-  subject: '[Red Diamond Bank] are you support?',
-  to: [ 'nvachhar@gmail.com' ]
-}
-Mail sent via Resend: d439ff72-0c08-43bd-95aa-f3e4cd482084
-Resend webhook received: email.delivered
-Email delivered: {
-  created_at: '2025-11-30T23:10:07.959Z',
-  email_id: 'd439ff72-0c08-43bd-95aa-f3e4cd482084',
-  from: 'Red Diamond Bank <mail@reddiamondbank.com>',
-  subject: '[Red Diamond Bank] Do you like my email service?',
-  to: [ 'madhukarvach@gmail.com' ]
-}
-Resend webhook received: email.sent
-Email sent: {
-  created_at: '2025-11-30T23:10:07.959Z',
-  email_id: 'd439ff72-0c08-43bd-95aa-f3e4cd482084',
-  from: 'Red Diamond Bank <mail@reddiamondbank.com>',
-  subject: '[Red Diamond Bank] Do you like my email service?',
-  to: [ 'madhukarvach@gmail.com' ]
+Stripe error: StripeAuthenticationError: Invalid API Key provided: sk_test_***********************************************************************************************12tD
+    at res.toJSON.then.Error_js_1.StripeAPIError.message (/Users/maxbuda/Documents /GitHub/bank/node_modules/stripe/cjs/RequestSender.js:102:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+  type: 'StripeAuthenticationError',
+  raw: {
+    message: 'Invalid API Key provided: sk_test_***********************************************************************************************12tD',
+    type: 'invalid_request_error',
+    headers: {
+      server: 'nginx',
+      date: 'Mon, 01 Dec 2025 01:16:50 GMT',
+      'content-type': 'application/json',
+      'content-length': '209',
+      connection: 'keep-alive',
+      'access-control-allow-credentials': 'true',
+      'access-control-allow-methods': 'GET, HEAD, PUT, PATCH, POST, DELETE',
+      'access-control-allow-origin': '*',
+      'access-control-expose-headers': 'Request-Id, Stripe-Manage-Version, Stripe-Should-Retry, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required',
+      'access-control-max-age': '300',
+      'cache-control': 'no-cache, no-store',
+      'content-security-policy': "base-uri 'none'; default-src 'none'; form-action 'none'; frame-ancestors 'none'; img-src 'self'; script-src 'self' 'report-sample'; style-src 'self'; worker-src 'none'; upgrade-insecure-requests; report-uri https://q.stripe.com/csp-violation?q=-Q3uBi2BRNj08gtk7V-dcWmMf8sF-uSFL_Z72TrSWwLEVQvVRVzUO_LP2NES9xpiVHUGyhGLqgCIhkHO",
+      vary: 'Origin',
+      'www-authenticate': 'Bearer realm="Stripe"',
+      'x-robots-tag': 'none',
+      'x-wc': 'ABHIJ',
+      'strict-transport-security': 'max-age=63072000; includeSubDomains; preload'
+    },
+    statusCode: 401,
+    requestId: undefined
+  },
+  rawType: 'invalid_request_error',
+  code: undefined,
+  doc_url: undefined,
+  param: undefined,
+  detail: undefined,
+  headers: {
+    server: 'nginx',
+    date: 'Mon, 01 Dec 2025 01:16:50 GMT',
+    'content-type': 'application/json',
+    'content-length': '209',
+    connection: 'keep-alive',
+    'access-control-allow-credentials': 'true',
+    'access-control-allow-methods': 'GET, HEAD, PUT, PATCH, POST, DELETE',
+    'access-control-allow-origin': '*',
+    'access-control-expose-headers': 'Request-Id, Stripe-Manage-Version, Stripe-Should-Retry, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required',
+    'access-control-max-age': '300',
+    'cache-control': 'no-cache, no-store',
+    'content-security-policy': "base-uri 'none'; default-src 'none'; form-action 'none'; frame-ancestors 'none'; img-src 'self'; script-src 'self' 'report-sample'; style-src 'self'; worker-src 'none'; upgrade-insecure-requests; report-uri https://q.stripe.com/csp-violation?q=-Q3uBi2BRNj08gtk7V-dcWmMf8sF-uSFL_Z72TrSWwLEVQvVRVzUO_LP2NES9xpiVHUGyhGLqgCIhkHO",
+    vary: 'Origin',
+    'www-authenticate': 'Bearer realm="Stripe"',
+    'x-robots-tag': 'none',
+    'x-wc': 'ABHIJ',
+    'strict-transport-security': 'max-age=63072000; includeSubDomains; preload'
+  },
+  requestId: undefined,
+  statusCode: 401,
+  userMessage: undefined,
+  charge: undefined,
+  decline_code: undefined,
+  payment_intent: undefined,
+  payment_method: undefined,
+  payment_method_type: undefined,
+  setup_intent: undefined,
+  source: undefined
 }

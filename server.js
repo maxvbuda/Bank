@@ -7,9 +7,19 @@ const bcrypt = require('bcrypt');
 const path = require('path');
 const nodemailer = require('nodemailer');
 const { Resend } = require('resend');
+const Stripe = require('stripe');
 const https = require('https');
 const http = require('http');
 const fs = require('fs');
+
+// Initialize Stripe lazily (only when needed and key is provided)
+let stripe = null;
+function getStripe() {
+    if (!stripe && process.env.STRIPE_SECRET_KEY) {
+        stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    }
+    return stripe;
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -58,6 +68,13 @@ if (process.env.EMAIL_SERVICE === 'resend' && process.env.EMAIL_PASS) {
     console.warn('Email service not configured. Set EMAIL_SERVICE=resend and EMAIL_PASS, or EMAIL_USER and EMAIL_PASS in .env file to enable email functionality.');
 }
 
+// Stripe configuration check
+if (process.env.STRIPE_SECRET_KEY) {
+    console.log('✅ Stripe payment processing enabled');
+} else {
+    console.warn('⚠️  Stripe not configured. Set STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY in .env file to enable payment processing.');
+}
+
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
@@ -91,6 +108,23 @@ function initializeDatabase() {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
+
+    db.run(`
+        CREATE TABLE IF NOT EXISTS purchases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            diamond_amount INTEGER NOT NULL,
+            cost REAL NOT NULL,
+            payment_info TEXT,
+            purchase_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    `);
+    
+    // Add payment_info column if it doesn't exist (for existing databases)
+    db.run(`ALTER TABLE purchases ADD COLUMN payment_info TEXT`, (err) => {
+        // Ignore error if column already exists
+    });
 
     db.run(`
         CREATE TABLE IF NOT EXISTS transactions (
@@ -147,18 +181,43 @@ function initializeDatabase() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             from_user_id INTEGER NOT NULL,
             from_username TEXT NOT NULL,
-            from_email TEXT NOT NULL,
+            from_nexmail TEXT NOT NULL,
             to_user_id INTEGER,
             to_username TEXT,
-            to_email TEXT NOT NULL,
+            to_nexmail TEXT NOT NULL,
             subject TEXT NOT NULL,
             body TEXT NOT NULL,
+            incognito INTEGER DEFAULT 0,
             sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             read_at DATETIME,
             FOREIGN KEY (from_user_id) REFERENCES users(id),
             FOREIGN KEY (to_user_id) REFERENCES users(id)
         )
     `);
+    
+    // Add nexmail columns if they don't exist (for existing databases)
+    db.run(`ALTER TABLE mail ADD COLUMN from_nexmail TEXT`, (err) => {
+        // Ignore error if column already exists
+        if (!err || err.message.includes('duplicate column')) {
+            // Migrate existing data from email to nexmail format
+            db.run(`UPDATE mail SET from_nexmail = from_username || '◆nexmail.diamond' WHERE from_nexmail IS NULL`, () => {});
+        }
+    });
+    
+    db.run(`ALTER TABLE mail ADD COLUMN to_nexmail TEXT`, (err) => {
+        // Ignore error if column already exists
+        if (!err || err.message.includes('duplicate column')) {
+            // Migrate existing data from email to nexmail format
+            db.run(`UPDATE mail SET to_nexmail = COALESCE(to_username || '◆nexmail.diamond', to_email) WHERE to_nexmail IS NULL`, () => {});
+        }
+    });
+
+    // Add incognito column if it doesn't exist (for existing databases)
+    db.run(`ALTER TABLE mail ADD COLUMN incognito INTEGER DEFAULT 0`, (err) => {
+        if (err && !err.message.includes('duplicate column')) {
+            console.error('Error adding incognito column:', err);
+        }
+    });
 
     console.log('Database tables initialized');
 }
@@ -959,13 +1018,52 @@ app.get('/api/incoming-emails', (req, res) => {
     );
 });
 
-// Mail Service - Send Email
+// Helper function to generate nexmail address with creative format
+function generateNexmailAddress(username) {
+    // Creative format: username◆nexmail.diamond
+    return `${username}◆nexmail.diamond`;
+}
+
+// Helper function to parse nexmail address (supports multiple formats)
+function parseNexmailAddress(nexmailAddress) {
+    if (!nexmailAddress) return '';
+    
+    // Remove various nexmail formats
+    let parsed = nexmailAddress
+        .replace(/@nexmail\.diamond$/i, '')
+        .replace(/◆nexmail\.diamond$/i, '')
+        .replace(/@reddiamondbank\.com$/i, '')
+        .replace(/◆/g, '') // Remove diamond symbols
+        .replace(/💎/g, '') // Remove diamond emoji
+        .trim();
+    
+    // If it still contains @, extract the part before @
+    if (parsed.includes('@')) {
+        parsed = parsed.split('@')[0].trim();
+    }
+    
+    return parsed;
+}
+
+// Helper function to format nexmail address for display (with styling)
+function formatNexmailForDisplay(nexmailAddress) {
+    if (!nexmailAddress) return '';
+    // Ensure it has the proper format for display
+    if (!nexmailAddress.includes('◆') && !nexmailAddress.includes('@')) {
+        return `${nexmailAddress}◆nexmail.diamond`;
+    }
+    return nexmailAddress;
+}
+
+// Nexmail Service - Send Nexmail
 app.post('/api/mail/send', async (req, res) => {
-    const { userId, to, subject, body } = req.body;
+    const { userId, to, subject, body, incognito } = req.body;
 
     if (!userId || !to || !subject || !body) {
         return res.status(400).json({ error: 'All fields are required' });
     }
+
+    const isIncognito = incognito === true || incognito === 1 || incognito === 'true';
 
     // Get sender info
     db.get('SELECT * FROM users WHERE id = ?', [userId], async (err, sender) => {
@@ -977,99 +1075,41 @@ app.post('/api/mail/send', async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // Find recipient - check if 'to' is a username or email
-        db.get('SELECT * FROM users WHERE username = ? OR email = ?', [to, to], async (err, recipient) => {
+        // Parse nexmail address - extract username
+        const recipientUsername = parseNexmailAddress(to);
+
+        // Find recipient by username (nexmail addresses are based on username)
+        db.get('SELECT * FROM users WHERE username = ?', [recipientUsername], async (err, recipient) => {
             if (err) {
                 return res.status(500).json({ error: 'Server error' });
             }
 
-            const recipientEmail = recipient ? recipient.email : to;
-            const recipientUsername = recipient ? recipient.username : null;
-            const recipientId = recipient ? recipient.id : null;
+            if (!recipient) {
+                return res.status(404).json({ error: `Nexmail address not found: ${to}. User must be registered in the system.` });
+            }
 
-            // Store email in database
+            const senderNexmail = generateNexmailAddress(sender.username);
+            const recipientNexmail = generateNexmailAddress(recipient.username);
+
+            // Store nexmail in database (internal system only - no external email sending)
             db.run(
-                'INSERT INTO mail (from_user_id, from_username, from_email, to_user_id, to_username, to_email, subject, body) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                [userId, sender.username, sender.email, recipientId, recipientUsername, recipientEmail, subject, body],
-                async (err) => {
+                'INSERT INTO mail (from_user_id, from_username, from_nexmail, to_user_id, to_username, to_nexmail, subject, body, incognito) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [userId, sender.username, senderNexmail, recipient.id, recipient.username, recipientNexmail, subject, body, isIncognito ? 1 : 0],
+                (err) => {
                     if (err) {
-                        console.error('Error storing mail:', err);
-                        return res.status(500).json({ error: 'Failed to store email' });
+                        console.error('Error storing nexmail:', err);
+                        return res.status(500).json({ error: 'Failed to send nexmail' });
                     }
 
-                    // Send email via Resend or SMTP
-                    const fromEmail = `Red Diamond Bank <mail@reddiamondbank.com>`;
-
-                    const emailHtml = `
-                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                            <h2 style="color: #dc143c;">🔴 Red Diamond Bank</h2>
-                            <h3>${subject}</h3>
-                            <p><strong>From:</strong> ${sender.username} (${sender.email})</p>
-                            <div style="background: #f5f5f5; padding: 20px; border-left: 4px solid #dc143c; margin: 20px 0; border-radius: 4px;">
-                                ${body.replace(/\n/g, '<br>')}
-                            </div>
-                            <p style="color: #666; font-size: 12px; margin-top: 30px;">
-                                This email was sent through Red Diamond Bank Mail Service.
-                            </p>
-                        </div>
-                    `;
-
-                    // Send via Resend API or SMTP
-                    if (resendClient) {
-                        try {
-                            const { data, error } = await resendClient.emails.send({
-                                from: fromEmail,
-                                to: recipientEmail,
-                                subject: `[Red Diamond Bank] ${subject}`,
-                                html: emailHtml
-                            });
-                            
-                            if (error) throw error;
-                            
-                            console.log('Mail sent via Resend:', data?.id);
-                            res.json({ message: 'Email sent successfully', emailSent: true });
-                        } catch (emailError) {
-                            console.error('Resend email failed:', emailError);
-                            // Still return success since email is stored in database
-                            res.json({ 
-                                message: 'Email stored but could not be sent via email service', 
-                                emailSent: false,
-                                emailError: emailError.message 
-                            });
-                        }
-                    } else if (transporter) {
-                        try {
-                            const mailOptions = {
-                                from: fromEmail,
-                                to: recipientEmail,
-                                subject: `[Red Diamond Bank] ${subject}`,
-                                html: emailHtml
-                            };
-                            await transporter.sendMail(mailOptions);
-                            console.log('Mail sent via SMTP');
-                            res.json({ message: 'Email sent successfully', emailSent: true });
-                        } catch (emailError) {
-                            console.error('SMTP email failed:', emailError);
-                            res.json({ 
-                                message: 'Email stored but could not be sent via email service', 
-                                emailSent: false,
-                                emailError: emailError.message 
-                            });
-                        }
-                    } else {
-                        // No email service configured, just store in database
-                        res.json({ 
-                            message: 'Email stored (email service not configured)', 
-                            emailSent: false 
-                        });
-                    }
+                    console.log(`Nexmail sent from ${senderNexmail} to ${recipientNexmail}`);
+                    res.json({ message: 'Nexmail sent successfully!', emailSent: true });
                 }
             );
         });
     });
 });
 
-// Get Inbox
+// Get Inbox (Nexmail)
 app.get('/api/mail/inbox', (req, res) => {
     const userId = req.query.userId;
 
@@ -1081,7 +1121,7 @@ app.get('/api/mail/inbox', (req, res) => {
         `SELECT m.*, u.username as from_username 
          FROM mail m 
          LEFT JOIN users u ON m.from_user_id = u.id 
-         WHERE m.to_user_id = ? OR m.to_email = (SELECT email FROM users WHERE id = ?)
+         WHERE m.to_user_id = ? OR m.to_nexmail = (SELECT username || '◆nexmail.diamond' FROM users WHERE id = ?)
          ORDER BY m.sent_at DESC`,
         [userId, userId],
         (err, emails) => {
@@ -1093,7 +1133,270 @@ app.get('/api/mail/inbox', (req, res) => {
     );
 });
 
-// Get Sent Mail
+// Get Stripe publishable key
+app.get('/api/stripe-config', (req, res) => {
+    const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
+    if (!publishableKey) {
+        return res.status(200).json({ 
+            publishableKey: null,
+            configured: false,
+            error: 'Stripe not configured. Please set STRIPE_PUBLISHABLE_KEY in .env file.'
+        });
+    }
+    res.json({ 
+        publishableKey: publishableKey,
+        configured: true
+    });
+});
+
+// Create Stripe Payment Intent
+app.post('/api/create-payment-intent', async (req, res) => {
+    const { userId, amount, cost } = req.body;
+
+    if (!userId || !amount || !cost) {
+        return res.status(400).json({ error: 'User ID, amount, and cost are required' });
+    }
+
+    if (amount < 1) {
+        return res.status(400).json({ error: 'Amount must be at least 1 diamond' });
+    }
+
+    const expectedCost = amount * 0.50;
+    if (Math.abs(cost - expectedCost) > 0.01) {
+        return res.status(400).json({ error: 'Invalid cost calculation' });
+    }
+
+    // Verify user exists
+    db.get('SELECT * FROM users WHERE id = ?', [userId], async (err, user) => {
+        if (err || !user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        if (!process.env.STRIPE_SECRET_KEY) {
+            return res.status(500).json({ error: 'Stripe not configured. Please set STRIPE_SECRET_KEY in .env' });
+        }
+
+        try {
+            const stripeClient = getStripe();
+            if (!stripeClient) {
+                return res.status(500).json({ error: 'Stripe not configured. Please set STRIPE_SECRET_KEY in .env' });
+            }
+            
+            // Create payment intent in cents
+            const paymentIntent = await stripeClient.paymentIntents.create({
+                amount: Math.round(cost * 100), // Convert to cents
+                currency: 'usd',
+                metadata: {
+                    userId: userId.toString(),
+                    diamondAmount: amount.toString(),
+                    username: user.username
+                }
+            });
+
+            res.json({
+                clientSecret: paymentIntent.client_secret,
+                paymentIntentId: paymentIntent.id
+            });
+        } catch (error) {
+            console.error('Stripe error:', error);
+            let errorMessage = 'Failed to create payment intent: ' + error.message;
+            
+            // Provide more helpful error messages
+            if (error.type === 'StripeAuthenticationError') {
+                errorMessage = 'Invalid Stripe API key. Please check your STRIPE_SECRET_KEY in the .env file. Make sure you copied the full key from your Stripe Dashboard (https://dashboard.stripe.com/test/apikeys) without any extra spaces or characters.';
+            } else if (error.type === 'StripeInvalidRequestError') {
+                errorMessage = 'Stripe request error: ' + error.message;
+            }
+            
+            res.status(500).json({ error: errorMessage });
+        }
+    });
+});
+
+// Confirm Payment and Complete Purchase (after Stripe payment succeeds)
+app.post('/api/confirm-payment', async (req, res) => {
+    const { userId, amount, cost, paymentIntentId } = req.body;
+
+    if (!userId || !amount || !cost || !paymentIntentId) {
+        return res.status(400).json({ error: 'User ID, amount, cost, and payment intent ID are required' });
+    }
+
+    if (amount < 1) {
+        return res.status(400).json({ error: 'Amount must be at least 1 diamond' });
+    }
+
+    const expectedCost = amount * 0.50;
+    if (Math.abs(cost - expectedCost) > 0.01) {
+        return res.status(400).json({ error: 'Invalid cost calculation' });
+    }
+
+    if (!process.env.STRIPE_SECRET_KEY) {
+        return res.status(500).json({ error: 'Stripe not configured' });
+    }
+
+    try {
+        const stripeClient = getStripe();
+        if (!stripeClient) {
+            return res.status(500).json({ error: 'Stripe not configured. Please set STRIPE_SECRET_KEY in .env' });
+        }
+        
+        // Verify payment intent with Stripe
+        const paymentIntent = await stripeClient.paymentIntents.retrieve(paymentIntentId);
+        
+        if (paymentIntent.status !== 'succeeded') {
+            return res.status(400).json({ error: 'Payment not completed. Status: ' + paymentIntent.status });
+        }
+
+        // Verify the payment matches the request
+        if (paymentIntent.metadata.userId !== userId.toString() || 
+            parseInt(paymentIntent.metadata.diamondAmount) !== amount) {
+            return res.status(400).json({ error: 'Payment verification failed' });
+        }
+
+        // Get user
+        db.get('SELECT * FROM users WHERE id = ?', [userId], (err, user) => {
+            if (err) {
+                return res.status(500).json({ error: 'Server error' });
+            }
+
+            if (!user) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+
+            // Record purchase with payment info
+            const paymentInfo = {
+                paymentIntentId: paymentIntentId,
+                stripeChargeId: paymentIntent.charges.data[0]?.id || null,
+                amountPaid: paymentIntent.amount / 100,
+                currency: paymentIntent.currency,
+                status: 'succeeded'
+            };
+
+            db.run(
+                'INSERT INTO purchases (user_id, diamond_amount, cost, payment_info) VALUES (?, ?, ?, ?)',
+                [userId, amount, cost, JSON.stringify(paymentInfo)],
+                (err) => {
+                    if (err) {
+                        console.error('Error recording purchase:', err);
+                        return res.status(500).json({ error: 'Failed to record purchase' });
+                    }
+
+                    // Update user balance
+                    const newBalance = user.balance + amount;
+                    db.run(
+                        'UPDATE users SET balance = ? WHERE id = ?',
+                        [newBalance, userId],
+                        (err) => {
+                            if (err) {
+                                console.error('Error updating balance:', err);
+                                return res.status(500).json({ error: 'Failed to update balance' });
+                            }
+
+                            // Record transaction
+                            db.run(
+                                'INSERT INTO transactions (user_id, type, amount, timestamp) VALUES (?, ?, ?, CURRENT_TIMESTAMP)',
+                                [userId, 'purchase', amount],
+                                (err) => {
+                                    if (err) {
+                                        console.error('Error recording transaction:', err);
+                                    }
+                                    
+                                    console.log(`Purchase completed: User ${userId} bought ${amount} diamonds for $${cost.toFixed(2)} (Stripe: ${paymentIntentId})`);
+                                    res.json({ 
+                                        message: 'Purchase successful', 
+                                        newBalance: newBalance,
+                                        diamondsPurchased: amount
+                                    });
+                                }
+                            );
+                        }
+                    );
+                }
+            );
+        });
+    } catch (error) {
+        console.error('Payment verification error:', error);
+        res.status(500).json({ error: 'Payment verification failed: ' + error.message });
+    }
+});
+
+// Purchase Red Diamonds (Old endpoint - kept for backwards compatibility, but requires Stripe)
+app.post('/api/purchase-diamonds', (req, res) => {
+    const { userId, amount, cost, paymentInfo } = req.body;
+
+    if (!userId || !amount || !cost) {
+        return res.status(400).json({ error: 'User ID, amount, and cost are required' });
+    }
+
+    if (!paymentInfo || !paymentInfo.cardLast4 || !paymentInfo.cardName || !paymentInfo.billingAddress) {
+        return res.status(400).json({ error: 'Payment information is required' });
+    }
+
+    if (amount < 1) {
+        return res.status(400).json({ error: 'Amount must be at least 1 diamond' });
+    }
+
+    const expectedCost = amount * 0.50;
+    if (Math.abs(cost - expectedCost) > 0.01) {
+        return res.status(400).json({ error: 'Invalid cost calculation' });
+    }
+
+    // Get user
+    db.get('SELECT * FROM users WHERE id = ?', [userId], (err, user) => {
+        if (err) {
+            return res.status(500).json({ error: 'Server error' });
+        }
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Record purchase with payment info
+        db.run(
+            'INSERT INTO purchases (user_id, diamond_amount, cost, payment_info) VALUES (?, ?, ?, ?)',
+            [userId, amount, cost, JSON.stringify(paymentInfo)],
+            (err) => {
+                if (err) {
+                    console.error('Error recording purchase:', err);
+                    return res.status(500).json({ error: 'Failed to record purchase' });
+                }
+
+                // Update user balance
+                const newBalance = user.balance + amount;
+                db.run(
+                    'UPDATE users SET balance = ? WHERE id = ?',
+                    [newBalance, userId],
+                    (err) => {
+                        if (err) {
+                            console.error('Error updating balance:', err);
+                            return res.status(500).json({ error: 'Failed to update balance' });
+                        }
+
+                        // Record transaction
+                        db.run(
+                            'INSERT INTO transactions (user_id, type, amount, timestamp) VALUES (?, ?, ?, CURRENT_TIMESTAMP)',
+                            [userId, 'purchase', amount],
+                            (err) => {
+                                if (err) {
+                                    console.error('Error recording transaction:', err);
+                                }
+                                
+                                console.log(`Purchase: User ${userId} bought ${amount} diamonds for $${cost.toFixed(2)}`);
+                                res.json({ 
+                                    message: 'Purchase successful', 
+                                    newBalance: newBalance,
+                                    diamondsPurchased: amount
+                                });
+                            }
+                        );
+                    }
+                );
+            }
+        );
+    });
+});
+
+// Get Sent Mail (Nexmail)
 app.get('/api/mail/sent', (req, res) => {
     const userId = req.query.userId;
 

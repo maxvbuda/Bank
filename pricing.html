@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buy Red Diamonds - Red Diamond Bank</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="alternate icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        .pricing-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 30px;
+            background: rgba(22, 33, 62, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .pricing-header h1 {
+            color: var(--red-diamond);
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(220, 20, 60, 0.5);
+        }
+        
+        .pricing-header p {
+            color: var(--text-light);
+            font-size: 1.2em;
+        }
+        
+        .price-per-diamond {
+            background: linear-gradient(135deg, rgba(220, 20, 60, 0.2), rgba(255, 20, 147, 0.2));
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+            border: 2px solid rgba(220, 20, 60, 0.3);
+        }
+        
+        .price-per-diamond h2 {
+            color: var(--red-diamond);
+            font-size: 1.8em;
+            margin: 0;
+        }
+        
+        .price-per-diamond .diamond-icon {
+            font-size: 2em;
+            color: var(--red-diamond);
+        }
+        
+        .purchase-form {
+            background: rgba(220, 20, 60, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid rgba(220, 20, 60, 0.3);
+        }
+        
+        .diamond-amount-input {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .diamond-amount-input input {
+            flex: 1;
+            padding: 15px;
+            font-size: 1.2em;
+            border: 2px solid rgba(220, 20, 60, 0.3);
+            border-radius: 10px;
+            background: rgba(22, 33, 62, 0.8);
+            color: var(--text-light);
+            text-align: center;
+        }
+        
+        .diamond-amount-input input:focus {
+            outline: none;
+            border-color: var(--red-diamond);
+            box-shadow: 0 0 15px rgba(220, 20, 60, 0.3);
+        }
+        
+        .quick-select-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .quick-select-btn {
+            padding: 10px;
+            background: rgba(220, 20, 60, 0.2);
+            border: 2px solid rgba(220, 20, 60, 0.3);
+            border-radius: 8px;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        
+        .quick-select-btn:hover {
+            background: rgba(220, 20, 60, 0.4);
+            border-color: var(--red-diamond);
+            transform: translateY(-2px);
+        }
+        
+        .total-cost {
+            background: linear-gradient(135deg, rgba(220, 20, 60, 0.3), rgba(255, 20, 147, 0.3));
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            border: 2px solid rgba(220, 20, 60, 0.5);
+        }
+        
+        .total-cost h3 {
+            color: var(--text-light);
+            font-size: 1.5em;
+            margin: 0 0 10px 0;
+        }
+        
+        .total-cost .amount {
+            color: var(--red-diamond);
+            font-size: 2em;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(220, 20, 60, 0.5);
+        }
+        
+        .purchase-btn {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.3em;
+            background: linear-gradient(135deg, var(--red-diamond), #ff1744);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(220, 20, 60, 0.4);
+        }
+        
+        .purchase-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(220, 20, 60, 0.6);
+        }
+        
+        .purchase-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: var(--red-diamond);
+            text-decoration: none;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+        }
+        
+        .back-link:hover {
+            text-shadow: 0 0 10px rgba(220, 20, 60, 0.5);
+        }
+        
+        .info-box {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 4px solid var(--red-diamond);
+        }
+        
+        .info-box p {
+            color: var(--text-light);
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="pricing-container">
+            <div class="pricing-header">
+                <h1>💎 Buy Red Diamonds 💎</h1>
+                <p>Purchase Red Diamonds to use in Red Diamond Bank</p>
+            </div>
+            
+            <div class="price-per-diamond">
+                <h2><span class="diamond-icon">◆</span> $0.50 per Diamond</h2>
+            </div>
+            
+            <div class="purchase-form">
+                <form id="purchaseForm">
+                    <div class="form-group">
+                        <label for="diamondAmount" style="color: var(--text-light); font-size: 1.1em; margin-bottom: 10px; display: block;">
+                            How many Red Diamonds would you like to purchase?
+                        </label>
+                        <div class="diamond-amount-input">
+                            <input type="number" id="diamondAmount" min="1" step="1" value="10" required>
+                            <span style="color: var(--red-diamond); font-size: 1.5em; font-weight: bold;">◆</span>
+                        </div>
+                    </div>
+                    
+                    <div class="quick-select-buttons">
+                        <button type="button" class="quick-select-btn" data-amount="10">10 ◆</button>
+                        <button type="button" class="quick-select-btn" data-amount="25">25 ◆</button>
+                        <button type="button" class="quick-select-btn" data-amount="50">50 ◆</button>
+                        <button type="button" class="quick-select-btn" data-amount="100">100 ◆</button>
+                        <button type="button" class="quick-select-btn" data-amount="250">250 ◆</button>
+                        <button type="button" class="quick-select-btn" data-amount="500">500 ◆</button>
+                    </div>
+                    
+                    <div class="total-cost">
+                        <h3>Total Cost</h3>
+                        <div class="amount" id="totalCost">$5.00</div>
+                    </div>
+                    
+                    <!-- Payment Information Section -->
+                    <div class="payment-section" id="paymentSection" style="display: none;">
+                        <h3 style="color: var(--red-diamond); margin-bottom: 20px; text-align: center;">💳 Payment Information</h3>
+                        
+                        <div id="stripeError" style="color: var(--error); margin-bottom: 15px; display: none; text-align: center; padding: 10px; background: rgba(244, 67, 54, 0.1); border-radius: 5px;"></div>
+                        
+                        <!-- Stripe Card Element Container -->
+                        <div id="card-element" style="padding: 12px; border: 2px solid rgba(220, 20, 60, 0.3); border-radius: 8px; background: rgba(22, 33, 62, 0.8); margin-bottom: 15px;">
+                            <!-- Stripe Elements will create form elements here -->
+                        </div>
+                        
+                        <div id="card-errors" role="alert" style="color: var(--error); margin-bottom: 15px; min-height: 20px;"></div>
+                        
+                        <div class="form-group">
+                            <label for="cardName" style="color: var(--text-light); margin-bottom: 8px; display: block;">
+                                Name on Card
+                            </label>
+                            <input type="text" id="cardName" placeholder="John Doe" required
+                                   style="width: 100%; padding: 12px; border: 2px solid rgba(220, 20, 60, 0.3); border-radius: 8px; background: rgba(22, 33, 62, 0.8); color: var(--text-light); font-size: 1.1em;">
+                        </div>
+                        
+                        <div id="paymentError" style="color: var(--error); margin-top: 10px; display: none; text-align: center; padding: 10px; background: rgba(244, 67, 54, 0.1); border-radius: 5px;"></div>
+                    </div>
+                    
+                    <button type="button" class="purchase-btn" id="continueBtn" style="margin-bottom: 10px;">
+                        Continue to Payment
+                    </button>
+                    
+                    <div id="continueError" style="color: #f44336; margin-top: 10px; margin-bottom: 10px; display: none; text-align: center; padding: 10px; background: rgba(244, 67, 54, 0.1); border-radius: 5px;"></div>
+                    
+                    <button type="submit" class="purchase-btn" id="purchaseBtn" style="display: none;">
+                        💳 Complete Purchase
+                    </button>
+                </form>
+                
+                <div class="info-box">
+                    <p><strong>💡 Payment Information:</strong></p>
+                    <p>• Secure payment processing</p>
+                    <p>• Instant delivery to your account</p>
+                    <p>• Red Diamonds are added immediately after purchase</p>
+                </div>
+                
+                <a href="index.html" class="back-link">← Back to Bank</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification Area -->
+    <div class="notification" id="notification"></div>
+    
+    <script>
+        const DIAMOND_PRICE = 0.50;
+        let stripe = null;
+        let cardElement = null;
+        let paymentIntentClientSecret = null;
+        let paymentIntentId = null;
+
+        const diamondAmountInput = document.getElementById('diamondAmount');
+        const totalCostDisplay = document.getElementById('totalCost');
+        const purchaseForm = document.getElementById('purchaseForm');
+        const purchaseBtn = document.getElementById('purchaseBtn');
+        const continueBtn = document.getElementById('continueBtn');
+        const paymentSection = document.getElementById('paymentSection');
+        const cardNameInput = document.getElementById('cardName');
+        const paymentError = document.getElementById('paymentError');
+        const stripeError = document.getElementById('stripeError');
+        const cardErrors = document.getElementById('card-errors');
+        const continueError = document.getElementById('continueError');
+
+        // Initialize Stripe
+        async function initializeStripe() {
+            try {
+                const response = await fetch('http://localhost:3000/api/stripe-config');
+                const config = await response.json();
+                
+                if (!config.configured || !config.publishableKey) {
+                    stripeError.textContent = '⚠️ Stripe payment processing is not configured. Please contact the administrator.';
+                    stripeError.style.display = 'block';
+                    return false;
+                }
+                
+                stripe = Stripe(config.publishableKey);
+                return true;
+            } catch (error) {
+                console.error('Failed to initialize Stripe:', error);
+                stripeError.textContent = 'Payment system unavailable. Please contact support.';
+                stripeError.style.display = 'block';
+                return false;
+            }
+        }
+
+        // Update total cost when amount changes
+        function updateTotalCost() {
+            const amount = parseInt(diamondAmountInput.value) || 0;
+            const total = (amount * DIAMOND_PRICE).toFixed(2);
+            totalCostDisplay.textContent = `$${total}`;
+        }
+
+        diamondAmountInput.addEventListener('input', updateTotalCost);
+
+        // Quick select buttons
+        document.querySelectorAll('.quick-select-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const amount = parseInt(btn.dataset.amount);
+                diamondAmountInput.value = amount;
+                updateTotalCost();
+            });
+        });
+
+        // Continue to payment button
+        continueBtn.addEventListener('click', async () => {
+            // Clear previous errors
+            continueError.style.display = 'none';
+            stripeError.style.display = 'none';
+            paymentError.style.display = 'none';
+            
+            const amount = parseInt(diamondAmountInput.value);
+            if (!amount || amount < 1) {
+                continueError.textContent = 'Please enter a valid number of diamonds';
+                continueError.style.display = 'block';
+                showNotification('Please enter a valid number of diamonds', 'error');
+                return;
+            }
+            
+            // Check if user is logged in first
+            const userId = localStorage.getItem('userId');
+            if (!userId) {
+                continueError.textContent = 'Please log in to purchase Red Diamonds';
+                continueError.style.display = 'block';
+                showNotification('Please log in to purchase Red Diamonds', 'error');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
+                return;
+            }
+            
+            // Disable button and show loading
+            continueBtn.disabled = true;
+            continueBtn.textContent = 'Loading...';
+            
+            // Initialize Stripe if not already done
+            if (!stripe) {
+                const initialized = await initializeStripe();
+                if (!initialized) {
+                    continueError.textContent = '⚠️ Payment system is not configured. Please contact support or configure Stripe.';
+                    continueError.style.display = 'block';
+                    showNotification('Payment system is not configured. Please contact support.', 'error');
+                    continueBtn.disabled = false;
+                    continueBtn.textContent = 'Continue to Payment';
+                    return;
+                }
+            }
+            
+            const totalCost = amount * DIAMOND_PRICE;
+            
+            // Create payment intent
+            try {
+                const response = await fetch('http://localhost:3000/api/create-payment-intent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: userId,
+                        amount: amount,
+                        cost: totalCost
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to initialize payment');
+                }
+                
+                paymentIntentClientSecret = data.clientSecret;
+                paymentIntentId = data.paymentIntentId;
+                
+                // Create Stripe Elements
+                const elements = stripe.elements({
+                    clientSecret: paymentIntentClientSecret
+                });
+                
+                cardElement = elements.create('card', {
+                    style: {
+                        base: {
+                            fontSize: '16px',
+                            color: '#eee',
+                            fontFamily: 'inherit',
+                            '::placeholder': {
+                                color: '#888',
+                            },
+                        },
+                        invalid: {
+                            color: '#f44336',
+                        },
+                    },
+                });
+                
+                cardElement.mount('#card-element');
+                
+                // Handle card errors
+                cardElement.on('change', ({error}) => {
+                    if (error) {
+                        cardErrors.textContent = error.message;
+                    } else {
+                        cardErrors.textContent = '';
+                    }
+                });
+                
+                // Show payment section
+                paymentSection.style.display = 'block';
+                continueBtn.style.display = 'none';
+                purchaseBtn.style.display = 'block';
+                paymentError.style.display = 'none';
+                stripeError.style.display = 'none';
+                
+                // Scroll to payment section
+                paymentSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                
+            } catch (error) {
+                console.error('Payment initialization error:', error);
+                const errorMsg = error.message || 'Failed to initialize payment. Please try again.';
+                continueError.textContent = errorMsg;
+                continueError.style.display = 'block';
+                showNotification(errorMsg, 'error');
+            } finally {
+                continueBtn.disabled = false;
+                continueBtn.textContent = 'Continue to Payment';
+            }
+        });
+
+        // Handle form submission
+        purchaseForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!paymentIntentClientSecret || !cardElement) {
+                showNotification('Please click "Continue to Payment" first', 'error');
+                return;
+            }
+            
+            const amount = parseInt(diamondAmountInput.value);
+            if (!amount || amount < 1) {
+                showNotification('Please enter a valid number of diamonds', 'error');
+                return;
+            }
+            
+            const cardName = cardNameInput.value.trim();
+            if (!cardName) {
+                paymentError.textContent = 'Please enter the name on the card.';
+                paymentError.style.display = 'block';
+                return;
+            }
+            
+            const userId = localStorage.getItem('userId');
+            if (!userId) {
+                showNotification('Please log in to purchase Red Diamonds', 'error');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
+                return;
+            }
+            
+            // Disable button during processing
+            purchaseBtn.disabled = true;
+            purchaseBtn.textContent = 'Processing Payment...';
+            paymentError.style.display = 'none';
+            cardErrors.textContent = '';
+            
+            try {
+                // Confirm payment with Stripe
+                const {error: stripeError, paymentIntent} = await stripe.confirmCardPayment(
+                    paymentIntentClientSecret,
+                    {
+                        payment_method: {
+                            card: cardElement,
+                            billing_details: {
+                                name: cardName,
+                            },
+                        }
+                    }
+                );
+                
+                if (stripeError) {
+                    throw new Error(stripeError.message);
+                }
+                
+                if (paymentIntent.status === 'succeeded') {
+                    // Confirm payment on server
+                    const totalCost = amount * DIAMOND_PRICE;
+                    const response = await fetch('http://localhost:3000/api/confirm-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: userId,
+                            amount: amount,
+                            cost: totalCost,
+                            paymentIntentId: paymentIntent.id
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        showNotification(`Payment successful! ${amount} Red Diamonds added to your account!`, 'success');
+                        
+                        // Reset form
+                        diamondAmountInput.value = 10;
+                        updateTotalCost();
+                        paymentSection.style.display = 'none';
+                        continueBtn.style.display = 'block';
+                        purchaseBtn.style.display = 'none';
+                        purchaseForm.reset();
+                        if (cardElement) {
+                            cardElement.unmount();
+                            cardElement = null;
+                        }
+                        paymentIntentClientSecret = null;
+                        paymentIntentId = null;
+                        
+                        // Redirect to main page after 3 seconds
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 3000);
+                    } else {
+                        throw new Error(data.error || 'Failed to complete purchase');
+                    }
+                } else {
+                    throw new Error('Payment was not successful');
+                }
+            } catch (error) {
+                paymentError.textContent = error.message || 'Payment failed. Please try again.';
+                paymentError.style.display = 'block';
+                showNotification(error.message || 'Payment failed. Please check your card and try again.', 'error');
+            } finally {
+                purchaseBtn.disabled = false;
+                purchaseBtn.textContent = '💳 Complete Purchase';
+            }
+        });
+
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.offsetHeight; // Trigger reflow
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Check if user is logged in on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            const userId = localStorage.getItem('userId');
+            if (!userId) {
+                showNotification('Please log in to purchase Red Diamonds', 'error');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
+                return;
+            }
+            
+            // Pre-initialize Stripe
+            await initializeStripe();
+        });
+    </script>
+</body>
+</html>
+
