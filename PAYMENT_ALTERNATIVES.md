@@ -93,3 +93,4 @@ Tell me which payment processor you'd like to use, and I can help you:
 
 Or, if you want to stick with Stripe but are having issues, I can help troubleshoot!
 
+
