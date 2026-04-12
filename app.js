@@ -2546,7 +2546,7 @@ class BankApp {
         const modal = document.getElementById('mailModal');
         modal.style.display = 'flex';
 
-        const username = localStorage.getItem('username');
+        const username = this.getStoredValue('username');
         if (username) {
             document.getElementById('userNexmailAddress').textContent =
                 `${username}@mail.reddiamondbank.com`;
@@ -2691,30 +2691,49 @@ class BankApp {
     async loadInbox() {
         const list = document.getElementById('inboxMailList');
         list.innerHTML = '<div class="email-empty-list">Loading…</div>';
+        const userId = this.getStoredValue('userId');
+        if (!userId) {
+            list.innerHTML = '<div class="email-empty-list">Please log in to view your inbox.</div>';
+            return;
+        }
         try {
-            const res = await this.apiFetch(`/api/mail/inbox?userId=${localStorage.getItem('userId')}`);
-            const emails = await res.json();
+            const res = await this.apiFetch(`/api/mail/inbox?userId=${userId}`);
+            const data = await res.json();
+            if (!res.ok) {
+                list.innerHTML = `<div class="email-empty-list">${data.error || 'Could not load inbox.'}</div>`;
+                return;
+            }
+            const emails = Array.isArray(data) ? data : [];
             list.innerHTML = '';
             if (!emails.length) {
                 list.innerHTML = '<div class="email-empty-list">No messages yet</div>';
                 return;
             }
             emails.forEach(email => list.appendChild(this._buildListItem(email, false)));
-
-            const unread = emails.length;
             const badge = document.getElementById('inboxUnreadBadge');
-            if (badge) { badge.textContent = unread; badge.style.display = unread ? '' : 'none'; }
+            if (badge) { badge.textContent = emails.length; badge.style.display = ''; }
         } catch (e) {
-            list.innerHTML = '<div class="email-empty-list">Failed to load inbox</div>';
+            console.error('loadInbox error:', e);
+            list.innerHTML = `<div class="email-empty-list">Failed to load inbox: ${e.message}</div>`;
         }
     }
 
     async loadSentMail() {
         const list = document.getElementById('sentMailList');
         list.innerHTML = '<div class="email-empty-list">Loading…</div>';
+        const userId = this.getStoredValue('userId');
+        if (!userId) {
+            list.innerHTML = '<div class="email-empty-list">Please log in to view sent mail.</div>';
+            return;
+        }
         try {
-            const res = await this.apiFetch(`/api/mail/sent?userId=${localStorage.getItem('userId')}`);
-            const emails = await res.json();
+            const res = await this.apiFetch(`/api/mail/sent?userId=${userId}`);
+            const data = await res.json();
+            if (!res.ok) {
+                list.innerHTML = `<div class="email-empty-list">${data.error || 'Could not load sent mail.'}</div>`;
+                return;
+            }
+            const emails = Array.isArray(data) ? data : [];
             list.innerHTML = '';
             if (!emails.length) {
                 list.innerHTML = '<div class="email-empty-list">No sent messages yet</div>';
@@ -2722,7 +2741,8 @@ class BankApp {
             }
             emails.forEach(email => list.appendChild(this._buildListItem(email, true)));
         } catch (e) {
-            list.innerHTML = '<div class="email-empty-list">Failed to load sent mail</div>';
+            console.error('loadSentMail error:', e);
+            list.innerHTML = `<div class="email-empty-list">Failed to load sent mail: ${e.message}</div>`;
         }
     }
 
@@ -2744,7 +2764,7 @@ class BankApp {
             const res  = await this.apiFetch('/api/mail/send', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: localStorage.getItem('userId'), to, subject, body, incognito })
+                body: JSON.stringify({ userId: this.getStoredValue('userId'), to, subject, body, incognito })
             });
             const data = await res.json();
             if (res.ok) {
