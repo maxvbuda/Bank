@@ -79,6 +79,13 @@ if (process.env.STRIPE_SECRET_KEY) {
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true })); // For webhook form data
+// Never cache JS/CSS/HTML so browsers always get the latest code
+app.use((req, res, next) => {
+    if (/\.(js|css|html)$/.test(req.path)) {
+        res.setHeader('Cache-Control', 'no-store');
+    }
+    next();
+});
 app.use(express.static(__dirname));
 
 // Favicon route - serve SVG favicon for .ico requests too
