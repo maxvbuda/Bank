@@ -393,16 +393,16 @@
                     <!-- Compose view -->
                     <div id="composeMailView" style="display:none;">
                         <div class="email-compose-header">New Message</div>
-                        <form id="composeMailForm" class="email-compose-form">
+                        <form id="composeMailForm" class="email-compose-form" novalidate>
                             <div class="email-compose-field">
                                 <label>To</label>
-                                <input type="text" id="mailTo" required placeholder="username or username◆nexmail.diamond">
+                                <input type="text" id="mailTo" placeholder="username or username@mail.reddiamondbank.com">
                             </div>
                             <div class="email-compose-field">
                                 <label>Subject</label>
-                                <input type="text" id="mailSubject" required placeholder="Subject">
+                                <input type="text" id="mailSubject" placeholder="Subject">
                             </div>
-                            <textarea id="mailBody" class="email-compose-body" required placeholder="Write your message…"></textarea>
+                            <textarea id="mailBody" class="email-compose-body" placeholder="Write your message…"></textarea>
                             <div class="email-compose-footer">
                                 <label class="email-incognito-label">
                                     <input type="checkbox" id="incognitoCheckbox"> 🔒 Send anonymously

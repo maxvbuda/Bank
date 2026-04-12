@@ -312,16 +312,16 @@ function initializeDatabase() {
     db.run(`ALTER TABLE mail ADD COLUMN from_nexmail TEXT`, (err) => {
         // Ignore error if column already exists
         if (!err || err.message.includes('duplicate column')) {
-            // Migrate existing data from email to nexmail format
-            db.run(`UPDATE mail SET from_nexmail = from_username || '◆nexmail.diamond' WHERE from_nexmail IS NULL`, () => {});
+            // Migrate existing data to new address format
+            db.run(`UPDATE mail SET from_nexmail = from_username || '@mail.reddiamondbank.com' WHERE from_nexmail IS NULL`, () => {});
         }
     });
     
     db.run(`ALTER TABLE mail ADD COLUMN to_nexmail TEXT`, (err) => {
         // Ignore error if column already exists
         if (!err || err.message.includes('duplicate column')) {
-            // Migrate existing data from email to nexmail format
-            db.run(`UPDATE mail SET to_nexmail = COALESCE(to_username || '◆nexmail.diamond', to_email) WHERE to_nexmail IS NULL`, () => {});
+            // Migrate existing data to new address format
+            db.run(`UPDATE mail SET to_nexmail = COALESCE(to_username || '@mail.reddiamondbank.com', to_email) WHERE to_nexmail IS NULL`, () => {});
         }
     });
 
@@ -1180,39 +1180,36 @@ app.get('/api/incoming-emails', (req, res) => {
     );
 });
 
-// Helper function to generate nexmail address with creative format
+// Generate the app email address for a user
 function generateNexmailAddress(username) {
-    // Creative format: username◆nexmail.diamond
-    return `${username}◆nexmail.diamond`;
+    return `${username}@mail.reddiamondbank.com`;
 }
 
-// Helper function to parse nexmail address (supports multiple formats)
+// Extract the plain username from any supported address format
 function parseNexmailAddress(nexmailAddress) {
     if (!nexmailAddress) return '';
-    
-    // Remove various nexmail formats
+
     let parsed = nexmailAddress
+        .replace(/@mail\.reddiamondbank\.com$/i, '')
         .replace(/@nexmail\.diamond$/i, '')
         .replace(/◆nexmail\.diamond$/i, '')
         .replace(/@reddiamondbank\.com$/i, '')
-        .replace(/◆/g, '') // Remove diamond symbols
-        .replace(/💎/g, '') // Remove diamond emoji
+        .replace(/◆/g, '')
+        .replace(/💎/g, '')
         .trim();
-    
-    // If it still contains @, extract the part before @
+
     if (parsed.includes('@')) {
         parsed = parsed.split('@')[0].trim();
     }
-    
+
     return parsed;
 }
 
-// Helper function to format nexmail address for display (with styling)
+// Normalise an address to the canonical format
 function formatNexmailForDisplay(nexmailAddress) {
     if (!nexmailAddress) return '';
-    // Ensure it has the proper format for display
-    if (!nexmailAddress.includes('◆') && !nexmailAddress.includes('@')) {
-        return `${nexmailAddress}◆nexmail.diamond`;
+    if (!nexmailAddress.includes('@') && !nexmailAddress.includes('◆')) {
+        return generateNexmailAddress(nexmailAddress);
     }
     return nexmailAddress;
 }
@@ -1247,24 +1244,62 @@ app.post('/api/mail/send', async (req, res) => {
             }
 
             if (!recipient) {
-                return res.status(404).json({ error: `Nexmail address not found: ${to}. User must be registered in the system.` });
+                return res.status(404).json({ error: `Address not found: ${to}. The user must be registered.` });
             }
 
-            const senderNexmail = generateNexmailAddress(sender.username);
-            const recipientNexmail = generateNexmailAddress(recipient.username);
+            const senderAddress   = generateNexmailAddress(sender.username);
+            const recipientAddress = generateNexmailAddress(recipient.username);
+            const displaySender   = isIncognito ? 'Anonymous' : senderAddress;
 
-            // Store nexmail in database (internal system only - no external email sending)
+            // Store in database
             db.run(
                 'INSERT INTO mail (from_user_id, from_username, from_nexmail, to_user_id, to_username, to_nexmail, subject, body, incognito) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                [userId, sender.username, senderNexmail, recipient.id, recipient.username, recipientNexmail, subject, body, isIncognito ? 1 : 0],
-                (err) => {
+                [userId, sender.username, senderAddress, recipient.id, recipient.username, recipientAddress, subject, body, isIncognito ? 1 : 0],
+                async (err) => {
                     if (err) {
-                        console.error('Error storing nexmail:', err);
-                        return res.status(500).json({ error: 'Failed to send nexmail' });
+                        console.error('Error storing mail:', err);
+                        return res.status(500).json({ error: 'Failed to send email' });
                     }
 
-                    console.log(`Nexmail sent from ${senderNexmail} to ${recipientNexmail}`);
-                    res.json({ message: 'Nexmail sent successfully!', emailSent: true });
+                    // Send a real email notification to the recipient's login email
+                    const recipientLoginEmail = recipient.email;
+                    if (recipientLoginEmail && (resendClient || transporter)) {
+                        const fromAddress = process.env.EMAIL_USER || 'mail@reddiamondbank.com';
+                        const notifyHtml = `
+                            <div style="font-family:sans-serif;max-width:600px;margin:auto;background:#0e1420;color:#ccc;border-radius:12px;overflow:hidden;">
+                                <div style="background:#dc143c;padding:20px 28px;">
+                                    <h2 style="margin:0;color:#fff;">✉️ New Message — Red Diamond Bank Mail</h2>
+                                </div>
+                                <div style="padding:28px;">
+                                    <p style="margin:0 0 8px;"><strong style="color:#fff;">From:</strong> ${displaySender}</p>
+                                    <p style="margin:0 0 8px;"><strong style="color:#fff;">To:</strong> ${recipientAddress}</p>
+                                    <p style="margin:0 0 20px;"><strong style="color:#fff;">Subject:</strong> ${subject}</p>
+                                    <div style="background:#161f35;border-radius:8px;padding:18px;white-space:pre-wrap;line-height:1.7;font-size:14px;">${body.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+                                    <p style="margin-top:24px;font-size:12px;color:#555;">
+                                        This email was sent to your Red Diamond Bank mail address: <strong>${recipientAddress}</strong><br>
+                                        Log in at <a href="https://reddiamondbank.com" style="color:#dc143c;">reddiamondbank.com</a> to reply.
+                                    </p>
+                                </div>
+                            </div>`;
+                        try {
+                            if (resendClient) {
+                                await resendClient.emails.send({
+                                    from: fromAddress,
+                                    to: recipientLoginEmail,
+                                    subject: `[Red Diamond Mail] ${subject}`,
+                                    html: notifyHtml
+                                });
+                            } else {
+                                await transporter.sendMail({ from: fromAddress, to: recipientLoginEmail, subject: `[Red Diamond Mail] ${subject}`, html: notifyHtml });
+                            }
+                            console.log(`Mail notification sent to ${recipientLoginEmail} for ${recipientAddress}`);
+                        } catch (emailErr) {
+                            console.warn('Could not send mail notification email:', emailErr.message);
+                        }
+                    }
+
+                    console.log(`Mail sent from ${senderAddress} to ${recipientAddress}`);
+                    res.json({ message: 'Email sent!', emailSent: true });
                 }
             );
         });
@@ -1291,7 +1326,7 @@ app.get('/api/mail/inbox', (req, res) => {
             `SELECT m.*, u.username as from_username 
              FROM mail m 
              LEFT JOIN users u ON m.from_user_id = u.id 
-             WHERE m.to_user_id = ? OR m.to_nexmail = (SELECT username || '◆nexmail.diamond' FROM users WHERE id = ?)
+             WHERE m.to_user_id = ? OR m.to_nexmail = (SELECT username || '@mail.reddiamondbank.com' FROM users WHERE id = ?)
              ORDER BY m.sent_at DESC`,
             [userId, userId],
             (err, internalEmails) => {
@@ -1308,13 +1343,13 @@ app.get('/api/mail/inbox', (req, res) => {
                         }
 
                         const username = (user.username || '').toLowerCase();
-                        const userNexmailAddress = `${username}◆nexmail.diamond`;
+                        const userMailAddress = `${username}@mail.reddiamondbank.com`;
 
                         const matchedIncoming = (incomingEmails || [])
                             .filter((email) => {
                                 const toField = String(email.to_email || '').toLowerCase();
                                 const parsedRecipient = parseNexmailAddress(toField).toLowerCase();
-                                return toField.includes(userNexmailAddress) || parsedRecipient === username;
+                                return toField === userMailAddress || parsedRecipient === username;
                             })
                             .map((email) => ({
                                 id: `incoming-${email.id}`,

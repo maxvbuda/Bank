@@ -2549,7 +2549,7 @@ class BankApp {
         const username = localStorage.getItem('username');
         if (username) {
             document.getElementById('userNexmailAddress').textContent =
-                `${username}◆nexmail.diamond`;
+                `${username}@mail.reddiamondbank.com`;
         }
 
         this.showInboxView();
@@ -2615,12 +2615,12 @@ class BankApp {
         const isExternal  = email.is_external === 1 || email.is_external === true;
 
         const from = isSent
-            ? (email.to_nexmail || `${email.to_username}◆nexmail.diamond`)
+            ? (email.to_nexmail || (email.to_username ? `${email.to_username}@mail.reddiamondbank.com` : '—'))
             : (isIncognito
                 ? '🔒 Anonymous Sender'
                 : isExternal
                     ? (email.from_email || 'External Sender')
-                    : (email.from_nexmail || `${email.from_username}◆nexmail.diamond`));
+                    : (email.from_nexmail || (email.from_username ? `${email.from_username}@mail.reddiamondbank.com` : '—')));
 
         const label = isSent ? 'To: ' : 'From: ';
         const dateStr = new Date(email.sent_at || email.received_at).toLocaleString();
@@ -2656,12 +2656,12 @@ class BankApp {
         const isExternal  = email.is_external === 1 || email.is_external === true;
 
         const from = isSent
-            ? (email.to_nexmail || (email.to_username ? `${email.to_username}◆nexmail.diamond` : '—'))
+            ? (email.to_nexmail || (email.to_username ? `${email.to_username}@mail.reddiamondbank.com` : '—'))
             : (isIncognito
                 ? '🔒 Anonymous'
                 : isExternal
                     ? (email.from_email || 'External')
-                    : (email.from_nexmail || (email.from_username ? `${email.from_username}◆nexmail.diamond` : '—')));
+                    : (email.from_nexmail || (email.from_username ? `${email.from_username}@mail.reddiamondbank.com` : '—')));
 
         const extBadge  = isExternal  ? '<span class="email-list-badge external">external</span>' : '';
         const incBadge  = isIncognito ? '<span class="email-list-badge incognito">anon</span>'   : '';
@@ -2732,6 +2732,10 @@ class BankApp {
         const subject  = document.getElementById('mailSubject').value.trim();
         const body     = document.getElementById('mailBody').value.trim();
         const incognito = document.getElementById('incognitoCheckbox').checked;
+
+        if (!to)      { this.showNotification('Please enter a recipient.', 'error'); return; }
+        if (!subject) { this.showNotification('Please enter a subject.', 'error'); return; }
+        if (!body)    { this.showNotification('Message body cannot be empty.', 'error'); return; }
 
         const sendBtn = e.target.querySelector('.email-send-btn');
         if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Sending…'; }
