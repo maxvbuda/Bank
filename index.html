@@ -261,6 +261,46 @@
                     </div>
                 </div>
 
+                <div class="action-card game-card">
+                    <h3>🧸 In a Child's Life</h3>
+                    <div class="game-container">
+                        <div class="game-info">
+                            <p>You play as the child while an adult keeps mocking you. Choose how you respond.</p>
+                            <div class="game-stats">
+                                <span>Turn: <strong id="childLifeTurn">0/8</strong></span>
+                                <span>Wellbeing: <strong id="childLifeWellbeing">50</strong></span>
+                                <span>Best: <strong id="childLifeBest">50</strong></span>
+                            </div>
+                        </div>
+                        <button class="btn-primary" id="startChildLifeBtn" style="max-width: 240px; margin: 0 auto;">🌟 Start Story</button>
+                        <div class="child-life-board" id="childLifeBoard">
+                            <div class="child-life-scene">
+                                <div class="child-life-character child-avatar" id="childLifeAvatar">🧒</div>
+                                <div class="child-life-reaction" id="childLifeReaction">...</div>
+                                <div class="child-life-mom action-idle" id="childLifeMom">
+                                    <div class="mom-head"></div>
+                                    <div class="mom-body"></div>
+                                    <div class="mom-arm"></div>
+                                </div>
+                            </div>
+                            <div class="child-life-meter">
+                                <span>Mood</span>
+                                <div class="child-life-meter-track">
+                                    <div class="child-life-meter-fill" id="childLifeMeterFill"></div>
+                                </div>
+                            </div>
+                            <div class="child-life-message">
+                                Press "Start Story" to play.
+                            </div>
+                            <p id="childLifePrompt">An adult keeps mocking you. Protect your wellbeing.</p>
+                            <p id="childLifeFeeling" class="child-life-feeling">How it feels: uncertain, but still hopeful.</p>
+                            <div class="child-life-choices" id="childLifeChoices"></div>
+                            <div class="child-life-log" id="childLifeLog"></div>
+                        </div>
+                        <div class="game-reward" id="childLifeReward"></div>
+                    </div>
+                </div>
+
                 <div class="action-card">
                     <h3>Withdraw</h3>
                     <form id="withdrawForm">

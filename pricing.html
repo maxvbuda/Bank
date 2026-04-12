@@ -295,7 +295,7 @@
         // Initialize Stripe
         async function initializeStripe() {
             try {
-                const response = await fetch('http://localhost:3000/api/stripe-config');
+                const response = await fetch('/api/stripe-config');
                 const config = await response.json();
                 
                 if (!config.configured || !config.publishableKey) {
@@ -380,7 +380,7 @@
             
             // Create payment intent
             try {
-                const response = await fetch('http://localhost:3000/api/create-payment-intent', {
+                const response = await fetch('/api/create-payment-intent', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -511,7 +511,7 @@
                 if (paymentIntent.status === 'succeeded') {
                     // Confirm payment on server
                     const totalCost = amount * DIAMOND_PRICE;
-                    const response = await fetch('http://localhost:3000/api/confirm-payment', {
+                    const response = await fetch('/api/confirm-payment', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({

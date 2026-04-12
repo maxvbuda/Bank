@@ -3,8 +3,17 @@
 class BankApp {
     constructor() {
         this.currentUser = null;
+        this.apiBase = window.location.protocol === 'file:' ? 'http://localhost:3000' : '';
         this.initializeEventListeners();
         this.checkSession();
+    }
+
+    apiUrl(path) {
+        return `${this.apiBase}${path}`;
+    }
+
+    apiFetch(path, options) {
+        return fetch(this.apiUrl(path), options);
     }
 
     initializeEventListeners() {
@@ -220,7 +229,7 @@ class BankApp {
         status.innerHTML = '<p style="color: #4CAF50;">⏳ Sending marketing emails...</p>';
         
         try {
-            const response = await fetch('http://localhost:3000/api/send-marketing-email', {
+            const response = await this.apiFetch('/api/send-marketing-email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -314,7 +323,7 @@ class BankApp {
         const email = document.getElementById('registerEmail').value;
 
         try {
-            const response = await fetch('http://localhost:3000/api/register', {
+            const response = await this.apiFetch('/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password, email })
@@ -340,7 +349,7 @@ class BankApp {
         const password = document.getElementById('loginPassword').value;
 
         try {
-            const response = await fetch('http://localhost:3000/api/login', {
+            const response = await this.apiFetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
@@ -373,7 +382,7 @@ class BankApp {
         }
 
         try {
-            const response = await fetch('http://localhost:3000/api/withdraw', {
+            const response = await this.apiFetch('/api/withdraw', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -413,7 +422,7 @@ class BankApp {
         }
 
         try {
-            const response = await fetch('http://localhost:3000/api/transfer', {
+            const response = await this.apiFetch('/api/transfer', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -444,7 +453,7 @@ class BankApp {
 
         if (userId && username) {
             try {
-                const response = await fetch(`http://localhost:3000/api/balance/${userId}`);
+                const response = await this.apiFetch(`/api/balance/${userId}`);
                 const data = await response.json();
 
                 if (response.ok) {
@@ -478,6 +487,7 @@ class BankApp {
         await this.loadProfile();
         this.initializeGame();
         this.initializeHeistGame();
+        this.initializeChildLifeGame();
     }
     
     async loadProfile() {
@@ -485,7 +495,7 @@ class BankApp {
             const userId = localStorage.getItem('userId');
             if (!userId) return;
             
-            const response = await fetch(`http://localhost:3000/api/profile/${userId}`);
+            const response = await this.apiFetch(`/api/profile/${userId}`);
             const data = await response.json();
             
             if (response.ok && data.user) {
@@ -526,7 +536,7 @@ class BankApp {
         const statusDiv = document.getElementById('profileUpdateStatus');
         
         try {
-            const response = await fetch(`http://localhost:3000/api/profile/${userId}`, {
+            const response = await this.apiFetch(`/api/profile/${userId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -562,7 +572,7 @@ class BankApp {
 
     async loadBalance() {
         try {
-            const response = await fetch(`http://localhost:3000/api/balance/${localStorage.getItem('userId')}`);
+            const response = await this.apiFetch(`/api/balance/${localStorage.getItem('userId')}`);
             const data = await response.json();
 
             if (response.ok) {
@@ -579,7 +589,7 @@ class BankApp {
 
     async loadTransactions() {
         try {
-            const response = await fetch(`http://localhost:3000/api/transactions/${localStorage.getItem('userId')}`);
+            const response = await this.apiFetch(`/api/transactions/${localStorage.getItem('userId')}`);
             const data = await response.json();
 
             if (response.ok) {
@@ -674,7 +684,7 @@ class BankApp {
         console.log('Sending delete request for userId:', localStorage.getItem('userId'));
 
         try {
-            const response = await fetch('http://localhost:3000/api/delete-account', {
+            const response = await this.apiFetch('/api/delete-account', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -791,7 +801,7 @@ class BankApp {
         }
 
         try {
-            const response = await fetch('http://localhost:3000/api/change-password', {
+            const response = await this.apiFetch('/api/change-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -875,7 +885,7 @@ class BankApp {
         const userId = localStorage.getItem('userId');
         
         try {
-            const response = await fetch('http://localhost:3000/api/shop/buy', {
+            const response = await this.apiFetch('/api/shop/buy', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId, itemId, itemName, price, icon })
@@ -901,7 +911,7 @@ class BankApp {
         const userId = localStorage.getItem('userId');
         
         try {
-            const response = await fetch(`http://localhost:3000/api/shop/inventory/${userId}`);
+            const response = await this.apiFetch(`/api/shop/inventory/${userId}`);
             const data = await response.json();
 
             const inventoryGrid = document.getElementById('inventoryGrid');
@@ -943,7 +953,7 @@ class BankApp {
         const email = document.getElementById('resetEmail').value;
 
         try {
-            const response = await fetch('http://localhost:3000/api/reset-password', {
+            const response = await this.apiFetch('/api/reset-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, email })
@@ -1250,7 +1260,7 @@ class BankApp {
         }, 1500);
 
         try {
-            const response = await fetch('http://localhost:3000/api/mine', {
+            const response = await this.apiFetch('/api/mine', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -1312,7 +1322,7 @@ class BankApp {
     async checkMasterThiefKit() {
         const userId = localStorage.getItem('userId');
         try {
-            const response = await fetch(`http://localhost:3000/api/shop/inventory/${userId}`);
+            const response = await this.apiFetch(`/api/shop/inventory/${userId}`);
             const data = await response.json();
             this.heistHasKit = data.inventory && data.inventory.some(item => item.item_name === 'Master Thief Kit');
         } catch (error) {
@@ -2128,7 +2138,7 @@ class BankApp {
         }, 2000);
 
         try {
-            const response = await fetch('http://localhost:3000/api/mine', {
+            const response = await this.apiFetch('/api/mine', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -2146,6 +2156,303 @@ class BankApp {
             }
         } catch (error) {
             console.error('Failed to award heist reward:', error);
+        }
+    }
+
+    // In a Child's Life Game
+    initializeChildLifeGame() {
+        this.childLifeActive = false;
+        this.childLifeTurn = 0;
+        this.childLifeMaxTurns = 8;
+        this.childLifeWellbeing = 50;
+        this.childLifeBest = parseInt(localStorage.getItem('childLifeBest')) || 50;
+        this.childLifeScenarios = [];
+
+        document.getElementById('childLifeTurn').textContent = `0/${this.childLifeMaxTurns}`;
+        document.getElementById('childLifeWellbeing').textContent = '50';
+        document.getElementById('childLifeBest').textContent = this.childLifeBest;
+        document.getElementById('childLifePrompt').textContent = 'An adult keeps mocking you. Protect your wellbeing.';
+        document.getElementById('childLifeFeeling').textContent = 'How it feels: uncertain, but still hopeful.';
+        document.getElementById('childLifeChoices').innerHTML = '';
+        document.getElementById('childLifeLog').textContent = '';
+        document.getElementById('childLifeReaction').textContent = '...';
+        this.setChildLifeMomAction('idle');
+        this.updateChildLifeVisuals();
+
+        const startBtn = document.getElementById('startChildLifeBtn');
+        if (startBtn && !startBtn.hasChildLifeListener) {
+            startBtn.addEventListener('click', () => this.startChildLifeGame());
+            startBtn.hasChildLifeListener = true;
+        }
+    }
+
+    startChildLifeGame() {
+        if (this.childLifeActive) return;
+
+        this.childLifeActive = true;
+        this.childLifeTurn = 0;
+        this.childLifeWellbeing = 50;
+        this.childLifeScenarios = this.getChildLifeScenarios()
+            .sort(() => Math.random() - 0.5)
+            .slice(0, this.childLifeMaxTurns);
+
+        document.getElementById('childLifeWellbeing').textContent = '50';
+        document.getElementById('childLifeTurn').textContent = `0/${this.childLifeMaxTurns}`;
+        document.getElementById('childLifeLog').textContent = '';
+        document.getElementById('childLifeReward').textContent = '';
+        document.getElementById('childLifeFeeling').textContent = 'How it feels: uncertain, but still hopeful.';
+        document.getElementById('startChildLifeBtn').disabled = true;
+        document.getElementById('startChildLifeBtn').textContent = 'Story Running...';
+        document.getElementById('childLifeReaction').textContent = '...';
+        this.setChildLifeMomAction('idle');
+        this.updateChildLifeVisuals();
+
+        this.advanceChildLifeTurn();
+    }
+
+    getChildLifeScenarios() {
+        return [
+            {
+                prompt: 'You forget lunch; mom points at the counter and shakes her head.',
+                momAction: 'point',
+                options: [
+                    { text: 'Send a short message asking for help', impact: 8, message: 'You reach for support before things spiral.', reaction: '📨' },
+                    { text: 'Keep quiet and save face for now', impact: -4, message: 'You get through it, but feel emptier later.', reaction: '🫥' }
+                ]
+            },
+            {
+                prompt: 'You pause on homework; mom leans over your shoulder with a long sigh.',
+                momAction: 'loom',
+                options: [
+                    { text: 'Set a 15-minute timer and start one part', impact: 7, message: 'Small momentum gives your brain room to breathe.', reaction: '⏱️' },
+                    { text: 'Wait until you "feel ready" later', impact: -5, message: 'Avoiding helps now, pressure grows later.', reaction: '🕰️' }
+                ]
+            },
+            {
+                prompt: 'Juice spills; mom throws one hand out in a sharp dismissive motion.',
+                momAction: 'dismiss',
+                options: [
+                    { text: 'Clean up quietly and move on', impact: 4, message: 'You recover quickly, even if still shaky.', reaction: '🧽' },
+                    { text: 'Apologize repeatedly to calm them down', impact: -3, message: 'Conflict drops, but you carry the blame.', reaction: '🙇' }
+                ]
+            },
+            {
+                prompt: 'You hold up your drawing; mom rolls her eyes and turns the page away.',
+                momAction: 'eye-roll',
+                options: [
+                    { text: 'Put it away and show one trusted friend later', impact: 6, message: 'You protect your spark without feeding the moment.', reaction: '🎨' },
+                    { text: 'Laugh along to avoid attention', impact: -4, message: 'The room gets easier, your chest gets heavier.', reaction: '😬' }
+                ]
+            },
+            {
+                prompt: 'At bedtime, mom folds her arms and stands in the doorway.',
+                momAction: 'loom',
+                options: [
+                    { text: 'Do your quiet wind-down routine anyway', impact: 7, message: 'Your body settles even when your mind is loud.', reaction: '🌙' },
+                    { text: 'Scroll until you are exhausted', impact: -5, message: 'Sleep comes late and thin.', reaction: '📱' }
+                ]
+            },
+            {
+                prompt: 'You start describing a rough day; mom turns away and tidies the table instead.',
+                momAction: 'turnaway',
+                options: [
+                    { text: 'Journal what happened before bed', impact: 5, message: 'Putting words on paper gives you back control.', reaction: '📓' },
+                    { text: 'Change the subject and joke it off', impact: -3, message: 'You avoid tension, but feelings stay parked inside.', reaction: '🎭' }
+                ]
+            },
+            {
+                prompt: 'You mention a new hobby; mom points at unfinished things on the shelf.',
+                momAction: 'point',
+                options: [
+                    { text: 'Try one beginner session with no pressure', impact: 6, message: 'You prove curiosity can survive criticism.', reaction: '🧩' },
+                    { text: 'Research it for weeks without starting', impact: -4, message: 'Planning feels safe, starting keeps slipping.', reaction: '🗂️' }
+                ]
+            },
+            {
+                prompt: 'You miss a detail; mom imitates your gestures with a sarcastic flourish.',
+                momAction: 'dismiss',
+                options: [
+                    { text: 'Name three things you did right today', impact: 7, message: 'You shift your inner voice toward balance.', reaction: '✅' },
+                    { text: 'Replay the moment in your head all evening', impact: -6, message: 'The echo gets louder than the event.', reaction: '🔁' }
+                ]
+            },
+            {
+                prompt: 'In front of others, mom steps closer and gestures toward you like a joke setup.',
+                momAction: 'loom',
+                options: [
+                    { text: 'Step out, get water, and reset', impact: 6, message: 'Taking space protects your nervous system.', reaction: '🚪' },
+                    { text: 'Stay and perform being "fine"', impact: -4, message: 'The moment passes, the sting does not.', reaction: '🎪' }
+                ]
+            },
+            {
+                prompt: 'Before a test, mom gives a tight smile and taps your notebook with one finger.',
+                momAction: 'point',
+                options: [
+                    { text: 'Review two key topics and sleep on time', impact: 8, message: 'Enough preparation beats panic.', reaction: '📘' },
+                    { text: 'Cram all night to prove yourself', impact: -5, message: 'Effort is high, recovery is low.', reaction: '🌃' }
+                ]
+            }
+        ];
+    }
+
+    setChildLifeMomAction(action) {
+        const mom = document.getElementById('childLifeMom');
+        if (!mom) return;
+        mom.classList.remove('action-idle', 'action-point', 'action-dismiss', 'action-loom', 'action-turnaway', 'action-eye-roll');
+        mom.classList.add(`action-${action}`);
+    }
+
+    updateChildLifeVisuals() {
+        const moodFill = document.getElementById('childLifeMeterFill');
+        const avatar = document.getElementById('childLifeAvatar');
+        const board = document.getElementById('childLifeBoard');
+        const wellbeing = this.childLifeWellbeing;
+
+        if (moodFill) moodFill.style.width = `${wellbeing}%`;
+        if (avatar) {
+            if (wellbeing >= 75) avatar.textContent = '😌';
+            else if (wellbeing >= 55) avatar.textContent = '🙂';
+            else if (wellbeing >= 35) avatar.textContent = '😟';
+            else avatar.textContent = '😢';
+        }
+        if (board) {
+            if (wellbeing >= 65) board.classList.add('child-life-stable');
+            else board.classList.remove('child-life-stable');
+        }
+    }
+
+    getChildLifeFeelingText(impact) {
+        if (impact >= 7) return 'How it feels: a small breath of relief opens up.';
+        if (impact >= 3) return 'How it feels: still tense, but a little steadier.';
+        if (impact >= 0) return 'How it feels: manageable for now, but fragile.';
+        if (impact >= -4) return 'How it feels: you keep a straight face, but it stings.';
+        return 'How it feels: heavy in your chest, hard to shake.';
+    }
+
+    applyChildLifeEmotionFx(impact) {
+        const board = document.getElementById('childLifeBoard');
+        const feeling = document.getElementById('childLifeFeeling');
+        if (!board || !feeling) return;
+
+        board.classList.remove('child-life-hit-soft', 'child-life-hit-hard', 'child-life-relief');
+        feeling.classList.remove('child-life-feeling-low', 'child-life-feeling-high');
+
+        if (impact >= 3) {
+            board.classList.add('child-life-relief');
+            feeling.classList.add('child-life-feeling-high');
+        } else if (impact <= -5) {
+            board.classList.add('child-life-hit-hard');
+            feeling.classList.add('child-life-feeling-low');
+        } else if (impact < 0) {
+            board.classList.add('child-life-hit-soft');
+            feeling.classList.add('child-life-feeling-low');
+        }
+    }
+
+    advanceChildLifeTurn() {
+        if (!this.childLifeActive) return;
+
+        if (this.childLifeTurn >= this.childLifeMaxTurns) {
+            this.endChildLifeGame();
+            return;
+        }
+
+        const scenario = this.childLifeScenarios[this.childLifeTurn];
+        const promptEl = document.getElementById('childLifePrompt');
+        const choicesEl = document.getElementById('childLifeChoices');
+
+        document.getElementById('childLifeTurn').textContent =
+            `${this.childLifeTurn + 1}/${this.childLifeMaxTurns}`;
+        promptEl.textContent = scenario.prompt;
+        choicesEl.innerHTML = '';
+        this.setChildLifeMomAction(scenario.momAction || 'idle');
+
+        scenario.options.forEach((option) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'child-life-choice-btn';
+            btn.textContent = option.text;
+            btn.addEventListener('click', () => this.handleChildLifeChoice(option));
+            choicesEl.appendChild(btn);
+        });
+    }
+
+    handleChildLifeChoice(option) {
+        if (!this.childLifeActive) return;
+
+        this.childLifeWellbeing = Math.max(0, Math.min(100, this.childLifeWellbeing + option.impact));
+        document.getElementById('childLifeWellbeing').textContent = this.childLifeWellbeing;
+        this.updateChildLifeVisuals();
+
+        const logEl = document.getElementById('childLifeLog');
+        const feelingEl = document.getElementById('childLifeFeeling');
+        const impactText = option.impact >= 0 ? `+${option.impact}` : `${option.impact}`;
+        logEl.textContent = `${impactText} wellbeing. ${option.message}`;
+        feelingEl.textContent = this.getChildLifeFeelingText(option.impact);
+        document.getElementById('childLifeReaction').textContent = option.reaction || (option.impact >= 0 ? '✨' : '💭');
+        this.applyChildLifeEmotionFx(option.impact);
+
+        this.childLifeTurn += 1;
+        setTimeout(() => this.advanceChildLifeTurn(), 450);
+    }
+
+    async endChildLifeGame() {
+        this.childLifeActive = false;
+
+        document.getElementById('childLifeChoices').innerHTML = '';
+        document.getElementById('childLifePrompt').textContent =
+            `Story complete! Final wellbeing: ${this.childLifeWellbeing}/100`;
+        document.getElementById('childLifeFeeling').textContent =
+            this.childLifeWellbeing >= 70
+                ? 'How it feels: you kept your voice and your center.'
+                : this.childLifeWellbeing >= 45
+                    ? 'How it feels: bruised, but still standing.'
+                    : 'How it feels: overwhelmed; this is where support matters most.';
+        this.setChildLifeMomAction('idle');
+        document.getElementById('startChildLifeBtn').disabled = false;
+        document.getElementById('startChildLifeBtn').textContent = '🌟 Play Again';
+        this.updateChildLifeVisuals();
+
+        if (this.childLifeWellbeing > this.childLifeBest) {
+            this.childLifeBest = this.childLifeWellbeing;
+            localStorage.setItem('childLifeBest', this.childLifeBest);
+            document.getElementById('childLifeBest').textContent = this.childLifeBest;
+            this.showNotification(`🏆 New Best Child Story: ${this.childLifeBest}!`, 'success');
+        }
+
+        const reward = Math.max(0, Math.floor(this.childLifeWellbeing / 12));
+        if (reward > 0) {
+            await this.awardChildLifeReward(reward);
+        }
+    }
+
+    async awardChildLifeReward(amount) {
+        const rewardEl = document.getElementById('childLifeReward');
+        rewardEl.textContent = `+${amount} \u25c6`;
+
+        setTimeout(() => {
+            rewardEl.textContent = '';
+        }, 2000);
+
+        try {
+            const response = await this.apiFetch('/api/mine', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: localStorage.getItem('userId'),
+                    amount: amount
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                this.updateBalance(data.balance);
+                this.loadTransactions();
+                this.showNotification(`Child story complete! Earned ${amount} Red Diamonds!`, 'success');
+            }
+        } catch (error) {
+            console.error('Failed to award child story reward:', error);
         }
     }
 
@@ -2239,7 +2546,7 @@ class BankApp {
         const incognito = document.getElementById('incognitoCheckbox').checked;
 
         try {
-            const response = await fetch('http://localhost:3000/api/mail/send', {
+            const response = await this.apiFetch('/api/mail/send', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -2269,7 +2576,7 @@ class BankApp {
 
     async loadInbox() {
         try {
-            const response = await fetch(`http://localhost:3000/api/mail/inbox?userId=${localStorage.getItem('userId')}`);
+            const response = await this.apiFetch(`/api/mail/inbox?userId=${localStorage.getItem('userId')}`);
             const emails = await response.json();
             
             const inboxList = document.getElementById('inboxMailList');
@@ -2310,7 +2617,7 @@ class BankApp {
 
     async loadSentMail() {
         try {
-            const response = await fetch(`http://localhost:3000/api/mail/sent?userId=${localStorage.getItem('userId')}`);
+            const response = await this.apiFetch(`/api/mail/sent?userId=${localStorage.getItem('userId')}`);
             const emails = await response.json();
             
             const sentList = document.getElementById('sentMailList');
