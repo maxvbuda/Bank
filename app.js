@@ -2540,194 +2540,220 @@ class BankApp {
         }, 3000);
     }
 
-    // Mail Service Functions
+    // ── Email Client ──────────────────────────────────────────────────────────
+
     async showMail() {
         const modal = document.getElementById('mailModal');
         modal.style.display = 'flex';
-        
-        // Display user's nexmail address with creative format
+
         const username = localStorage.getItem('username');
         if (username) {
-            document.getElementById('userNexmailAddress').textContent = `${username}◆nexmail.diamond`;
+            document.getElementById('userNexmailAddress').textContent =
+                `${username}◆nexmail.diamond`;
         }
-        
+
         this.showInboxView();
-        await this.loadInbox();
-        await this.loadSentMail();
 
-        // Close on outside click
-        const clickHandler = (e) => {
-            if (e.target === modal) {
-                this.closeMail();
-                modal.removeEventListener('click', clickHandler);
-            }
+        const escHandler = (e) => {
+            if (e.key === 'Escape') { this.closeMail(); document.removeEventListener('keydown', escHandler); }
         };
-        modal.addEventListener('click', clickHandler);
+        document.addEventListener('keydown', escHandler);
 
-        // Close on Escape key
-        const escapeHandler = (e) => {
-            if (e.key === 'Escape') {
-                this.closeMail();
-                document.removeEventListener('keydown', escapeHandler);
-            }
+        document.getElementById('emailRefreshBtn').onclick = () => {
+            if (this._emailView === 'sent') this.loadSentMail();
+            else this.loadInbox();
         };
-        document.addEventListener('keydown', escapeHandler);
     }
 
     closeMail() {
         document.getElementById('mailModal').style.display = 'none';
     }
 
+    _emailSetReading(show) {
+        const empty   = document.getElementById('emailEmptyState');
+        const detail  = document.getElementById('emailDetailView');
+        const compose = document.getElementById('composeMailView');
+        empty.style.display   = show === 'empty'   ? 'flex' : 'none';
+        detail.style.display  = show === 'detail'  ? 'flex' : 'none';
+        compose.style.display = show === 'compose' ? 'flex' : 'none';
+    }
+
     showComposeView() {
-        document.getElementById('composeMailView').style.display = 'block';
-        document.getElementById('inboxMailView').style.display = 'none';
-        document.getElementById('sentMailView').style.display = 'none';
+        this._emailSetReading('compose');
         document.getElementById('composeMailBtn').classList.add('active');
         document.getElementById('inboxMailBtn').classList.remove('active');
         document.getElementById('sentMailBtn').classList.remove('active');
+        document.getElementById('mailTo').focus();
     }
 
     showInboxView() {
-        document.getElementById('composeMailView').style.display = 'none';
-        document.getElementById('inboxMailView').style.display = 'block';
-        document.getElementById('sentMailView').style.display = 'none';
-        document.getElementById('composeMailBtn').classList.remove('active');
+        this._emailView = 'inbox';
+        document.getElementById('inboxMailList').style.display = '';
+        document.getElementById('sentMailList').style.display  = 'none';
+        document.getElementById('emailListTitle').textContent  = 'Inbox';
         document.getElementById('inboxMailBtn').classList.add('active');
         document.getElementById('sentMailBtn').classList.remove('active');
+        document.getElementById('composeMailBtn').classList.remove('active');
+        this._emailSetReading('empty');
         this.loadInbox();
     }
 
     showSentView() {
-        document.getElementById('composeMailView').style.display = 'none';
-        document.getElementById('inboxMailView').style.display = 'none';
-        document.getElementById('sentMailView').style.display = 'block';
-        document.getElementById('composeMailBtn').classList.remove('active');
-        document.getElementById('inboxMailBtn').classList.remove('active');
+        this._emailView = 'sent';
+        document.getElementById('inboxMailList').style.display = 'none';
+        document.getElementById('sentMailList').style.display  = '';
+        document.getElementById('emailListTitle').textContent  = 'Sent';
         document.getElementById('sentMailBtn').classList.add('active');
+        document.getElementById('inboxMailBtn').classList.remove('active');
+        document.getElementById('composeMailBtn').classList.remove('active');
+        this._emailSetReading('empty');
         this.loadSentMail();
     }
 
-    async handleSendMail(e) {
-        e.preventDefault();
-        const to = document.getElementById('mailTo').value;
-        const subject = document.getElementById('mailSubject').value;
-        const body = document.getElementById('mailBody').value;
-        const incognito = document.getElementById('incognitoCheckbox').checked;
+    _openEmail(email, isSent) {
+        const isIncognito = email.incognito === 1 || email.incognito === true;
+        const isExternal  = email.is_external === 1 || email.is_external === true;
 
-        try {
-            const response = await this.apiFetch('/api/mail/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: localStorage.getItem('userId'),
-                    to: to,
-                    subject: subject,
-                    body: body,
-                    incognito: incognito
-                })
-            });
+        const from = isSent
+            ? (email.to_nexmail || `${email.to_username}◆nexmail.diamond`)
+            : (isIncognito
+                ? '🔒 Anonymous Sender'
+                : isExternal
+                    ? (email.from_email || 'External Sender')
+                    : (email.from_nexmail || `${email.from_username}◆nexmail.diamond`));
 
-            const data = await response.json();
+        const label = isSent ? 'To: ' : 'From: ';
+        const dateStr = new Date(email.sent_at || email.received_at).toLocaleString();
 
-            if (response.ok) {
-                this.showNotification(data.message || 'Nexmail sent successfully!', 'success');
-                document.getElementById('composeMailForm').reset();
-                document.getElementById('incognitoCheckbox').checked = false;
-                this.showSentView();
-                await this.loadSentMail();
-            } else {
-                this.showNotification(data.error || 'Failed to send nexmail', 'error');
-            }
-        } catch (error) {
-            this.showNotification('Network error. Please try again.', 'error');
+        document.getElementById('emailDetailSubject').textContent = email.subject || '(No subject)';
+        document.getElementById('emailDetailFrom').textContent    = label + from;
+        document.getElementById('emailDetailDate').textContent    = dateStr;
+        document.getElementById('emailDetailBody').textContent    = email.body || '(No content)';
+
+        document.getElementById('backToMailBtn').onclick = () => {
+            this._emailSetReading('empty');
+            document.querySelectorAll('.email-list-item').forEach(el => el.classList.remove('active'));
+        };
+
+        this._emailSetReading('detail');
+
+        document.querySelectorAll('.email-list-item').forEach(el => el.classList.remove('active'));
+        if (email._listEl) email._listEl.classList.add('active');
+    }
+
+    _formatDate(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        const now = new Date();
+        if (d.toDateString() === now.toDateString()) {
+            return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
+        return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+
+    _buildListItem(email, isSent) {
+        const isIncognito = email.incognito === 1 || email.incognito === true;
+        const isExternal  = email.is_external === 1 || email.is_external === true;
+
+        const from = isSent
+            ? (email.to_nexmail || (email.to_username ? `${email.to_username}◆nexmail.diamond` : '—'))
+            : (isIncognito
+                ? '🔒 Anonymous'
+                : isExternal
+                    ? (email.from_email || 'External')
+                    : (email.from_nexmail || (email.from_username ? `${email.from_username}◆nexmail.diamond` : '—')));
+
+        const extBadge  = isExternal  ? '<span class="email-list-badge external">external</span>' : '';
+        const incBadge  = isIncognito ? '<span class="email-list-badge incognito">anon</span>'   : '';
+        const dateLabel = this._formatDate(email.sent_at || email.received_at);
+
+        const el = document.createElement('div');
+        el.className = 'email-list-item';
+        el.innerHTML = `
+            <div class="email-list-item-from">${this._esc(from)}${extBadge}${incBadge}</div>
+            <div class="email-list-item-subject">${this._esc(email.subject || '(No subject)')}</div>
+            <div class="email-list-item-preview">${this._esc((email.body || '').substring(0, 80))}</div>
+            <div class="email-list-item-date">${dateLabel}</div>
+        `;
+        email._listEl = el;
+        el.addEventListener('click', () => this._openEmail(email, isSent));
+        return el;
+    }
+
+    _esc(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
     }
 
     async loadInbox() {
+        const list = document.getElementById('inboxMailList');
+        list.innerHTML = '<div class="email-empty-list">Loading…</div>';
         try {
-            const response = await this.apiFetch(`/api/mail/inbox?userId=${localStorage.getItem('userId')}`);
-            const emails = await response.json();
-            
-            const inboxList = document.getElementById('inboxMailList');
-            if (emails.length === 0) {
-                inboxList.innerHTML = '<p style="color: #888; text-align: center;">No nexmail yet</p>';
+            const res = await this.apiFetch(`/api/mail/inbox?userId=${localStorage.getItem('userId')}`);
+            const emails = await res.json();
+            list.innerHTML = '';
+            if (!emails.length) {
+                list.innerHTML = '<div class="email-empty-list">No messages yet</div>';
                 return;
             }
+            emails.forEach(email => list.appendChild(this._buildListItem(email, false)));
 
-            inboxList.innerHTML = emails.map(email => {
-                const isIncognito = email.incognito === 1 || email.incognito === true;
-                const isExternal = email.is_external === 1 || email.is_external === true;
-                const senderDisplay = isIncognito
-                    ? '🔒 Incognito Sender'
-                    : (isExternal
-                        ? (email.from_email || 'External Sender')
-                        : (email.from_nexmail || `${email.from_username}◆nexmail.diamond`));
-                const isNexmailAddress = senderDisplay.includes('◆') || senderDisplay.includes('@');
-                const externalBadge = isExternal
-                    ? '<span style="background: rgba(33, 150, 243, 0.25); padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px;">📩 External</span>'
-                    : '';
-                const displayDate = email.sent_at || email.received_at;
-                
-                return `
-                    <div class="mail-item" style="padding: 15px; margin-bottom: 10px; background: rgba(220, 20, 60, 0.1); border-left: 3px solid var(--red-diamond); border-radius: 8px; cursor: pointer;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; align-items: center;">
-                            <div>
-                                ${isIncognito 
-                                    ? `<strong style="color: var(--red-diamond);">${senderDisplay}</strong>`
-                                    : `<strong style="color: var(--red-diamond); font-family: 'Courier New', monospace; text-shadow: 0 0 8px rgba(220, 20, 60, 0.4);">
-                                        ${isNexmailAddress ? '💎' : ''} ${senderDisplay}
-                                    </strong>`
-                                }
-                                ${externalBadge}
-                            </div>
-                            <span style="color: #888; font-size: 12px;">${new Date(displayDate).toLocaleDateString()}</span>
-                        </div>
-                        <div style="font-weight: bold; margin-bottom: 5px;">${email.subject}</div>
-                        <div style="color: #aaa; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${email.body || '(No content)'}</div>
-                    </div>
-                `;
-            }).join('');
-        } catch (error) {
-            console.error('Failed to load inbox:', error);
+            const unread = emails.length;
+            const badge = document.getElementById('inboxUnreadBadge');
+            if (badge) { badge.textContent = unread; badge.style.display = unread ? '' : 'none'; }
+        } catch (e) {
+            list.innerHTML = '<div class="email-empty-list">Failed to load inbox</div>';
         }
     }
 
     async loadSentMail() {
+        const list = document.getElementById('sentMailList');
+        list.innerHTML = '<div class="email-empty-list">Loading…</div>';
         try {
-            const response = await this.apiFetch(`/api/mail/sent?userId=${localStorage.getItem('userId')}`);
-            const emails = await response.json();
-            
-            const sentList = document.getElementById('sentMailList');
-            if (emails.length === 0) {
-                sentList.innerHTML = '<p style="color: #888; text-align: center;">No sent nexmail yet</p>';
+            const res = await this.apiFetch(`/api/mail/sent?userId=${localStorage.getItem('userId')}`);
+            const emails = await res.json();
+            list.innerHTML = '';
+            if (!emails.length) {
+                list.innerHTML = '<div class="email-empty-list">No sent messages yet</div>';
                 return;
             }
+            emails.forEach(email => list.appendChild(this._buildListItem(email, true)));
+        } catch (e) {
+            list.innerHTML = '<div class="email-empty-list">Failed to load sent mail</div>';
+        }
+    }
 
-            sentList.innerHTML = emails.map(email => {
-                const isIncognito = email.incognito === 1 || email.incognito === true;
-                const incognitoBadge = isIncognito ? '<span style="background: rgba(128, 128, 128, 0.3); padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px;">🔒 Incognito</span>' : '';
-                const recipientDisplay = email.to_nexmail || `${email.to_username}◆nexmail.diamond`;
-                const isNexmailAddress = recipientDisplay.includes('◆') || recipientDisplay.includes('@');
-                
-                return `
-                    <div class="mail-item" style="padding: 15px; margin-bottom: 10px; background: rgba(220, 20, 60, 0.1); border-left: 3px solid var(--red-diamond); border-radius: 8px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; align-items: center;">
-                            <div>
-                                <strong style="color: var(--red-diamond);">To: </strong>
-                                <strong style="color: var(--red-diamond); font-family: 'Courier New', monospace; text-shadow: 0 0 8px rgba(220, 20, 60, 0.4);">
-                                    ${isNexmailAddress ? '💎' : ''} ${recipientDisplay}
-                                </strong>
-                                ${incognitoBadge}
-                            </div>
-                            <span style="color: #888; font-size: 12px;">${new Date(email.sent_at).toLocaleDateString()}</span>
-                        </div>
-                        <div style="font-weight: bold; margin-bottom: 5px;">${email.subject}</div>
-                        <div style="color: #aaa; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${email.body}</div>
-                    </div>
-                `;
-            }).join('');
-        } catch (error) {
-            console.error('Failed to load sent mail:', error);
+    async handleSendMail(e) {
+        e.preventDefault();
+        const to       = document.getElementById('mailTo').value.trim();
+        const subject  = document.getElementById('mailSubject').value.trim();
+        const body     = document.getElementById('mailBody').value.trim();
+        const incognito = document.getElementById('incognitoCheckbox').checked;
+
+        const sendBtn = e.target.querySelector('.email-send-btn');
+        if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Sending…'; }
+
+        try {
+            const res  = await this.apiFetch('/api/mail/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: localStorage.getItem('userId'), to, subject, body, incognito })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                this.showNotification('Email sent!', 'success');
+                document.getElementById('composeMailForm').reset();
+                this.showSentView();
+            } else {
+                this.showNotification(data.error || 'Failed to send email', 'error');
+            }
+        } catch {
+            this.showNotification('Network error. Please try again.', 'error');
+        } finally {
+            if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Send ➤'; }
         }
     }
 }
