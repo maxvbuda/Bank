@@ -3,17 +3,76 @@
 class BankApp {
     constructor() {
         this.currentUser = null;
-        this.apiBase = window.location.protocol === 'file:' ? 'http://localhost:3000' : '';
+        this.apiBase = this.resolveApiBase();
+        this.apiFallbackBase = this.resolveApiFallbackBase();
         this.initializeEventListeners();
         this.checkSession();
+    }
+
+    normalizeApiBase(base) {
+        if (!base || typeof base !== 'string') return '';
+        return base.trim().replace(/\/+$/, '');
+    }
+
+    resolveApiBase() {
+        const configuredBase = this.normalizeApiBase(
+            window.BANK_API_BASE_URL || localStorage.getItem('bankApiBaseUrl')
+        );
+        if (configuredBase) return configuredBase;
+
+        if (window.location.protocol === 'file:') {
+            return 'http://localhost:3000';
+        }
+
+        return '';
+    }
+
+    resolveApiFallbackBase() {
+        const configuredFallback = this.normalizeApiBase(
+            window.BANK_API_FALLBACK_URL || localStorage.getItem('bankApiFallbackUrl')
+        );
+        if (configuredFallback) return configuredFallback;
+
+        const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+        if (!isLocalhost && this.apiBase === '') {
+            // Useful when frontend is on a static host but API still runs locally.
+            return 'http://localhost:3000';
+        }
+
+        return '';
     }
 
     apiUrl(path) {
         return `${this.apiBase}${path}`;
     }
 
-    apiFetch(path, options) {
-        return fetch(this.apiUrl(path), options);
+    async apiFetch(path, options) {
+        const primaryUrl = this.apiUrl(path);
+
+        try {
+            const response = await fetch(primaryUrl, options);
+
+            const shouldTryFallback = response.status === 405 &&
+                this.apiFallbackBase &&
+                this.apiFallbackBase !== this.apiBase;
+
+            if (shouldTryFallback) {
+                const fallbackUrl = `${this.apiFallbackBase}${path}`;
+                const fallbackResponse = await fetch(fallbackUrl, options);
+                if (fallbackResponse.ok || fallbackResponse.status !== 405) {
+                    return fallbackResponse;
+                }
+            }
+
+            return response;
+        } catch (error) {
+            const canTryFallback = this.apiFallbackBase && this.apiFallbackBase !== this.apiBase;
+            if (canTryFallback) {
+                const fallbackUrl = `${this.apiFallbackBase}${path}`;
+                return fetch(fallbackUrl, options);
+            }
+            throw error;
+        }
     }
 
     initializeEventListeners() {
