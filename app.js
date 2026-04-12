@@ -54,6 +54,15 @@ class BankApp {
         return `${this.apiBase}${path}`;
     }
 
+    async safeJson(res) {
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) {
+            const preview = await res.text().then(t => t.slice(0, 80)).catch(() => '');
+            throw new Error(`Expected JSON but got HTML (${res.status}). Is the server running at ${this.apiBase || 'localhost:3000'}? Preview: ${preview}`);
+        }
+        return res.json();
+    }
+
     async apiFetch(path, options) {
         const primaryUrl = this.apiUrl(path);
 
@@ -2698,7 +2707,7 @@ class BankApp {
         }
         try {
             const res = await this.apiFetch(`/api/mail/inbox?userId=${userId}`);
-            const data = await res.json();
+            const data = await this.safeJson(res);
             if (!res.ok) {
                 list.innerHTML = `<div class="email-empty-list">${data.error || 'Could not load inbox.'}</div>`;
                 return;
@@ -2728,7 +2737,7 @@ class BankApp {
         }
         try {
             const res = await this.apiFetch(`/api/mail/sent?userId=${userId}`);
-            const data = await res.json();
+            const data = await this.safeJson(res);
             if (!res.ok) {
                 list.innerHTML = `<div class="email-empty-list">${data.error || 'Could not load sent mail.'}</div>`;
                 return;
