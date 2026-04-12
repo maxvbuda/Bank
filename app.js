@@ -14,9 +14,17 @@ class BankApp {
         return base.trim().replace(/\/+$/, '');
     }
 
+    getStoredValue(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (error) {
+            return null;
+        }
+    }
+
     resolveApiBase() {
         const configuredBase = this.normalizeApiBase(
-            window.BANK_API_BASE_URL || localStorage.getItem('bankApiBaseUrl')
+            window.BANK_API_BASE_URL || this.getStoredValue('bankApiBaseUrl')
         );
         if (configuredBase) return configuredBase;
 
@@ -29,7 +37,7 @@ class BankApp {
 
     resolveApiFallbackBase() {
         const configuredFallback = this.normalizeApiBase(
-            window.BANK_API_FALLBACK_URL || localStorage.getItem('bankApiFallbackUrl')
+            window.BANK_API_FALLBACK_URL || this.getStoredValue('bankApiFallbackUrl')
         );
         if (configuredFallback) return configuredFallback;
 
@@ -2426,7 +2434,9 @@ class BankApp {
         choicesEl.innerHTML = '';
         this.setChildLifeMomAction(scenario.momAction || 'idle');
 
-        scenario.options.forEach((option) => {
+        const randomizedOptions = [...scenario.options].sort(() => Math.random() - 0.5);
+
+        randomizedOptions.forEach((option) => {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'child-life-choice-btn';
@@ -2646,10 +2656,17 @@ class BankApp {
 
             inboxList.innerHTML = emails.map(email => {
                 const isIncognito = email.incognito === 1 || email.incognito === true;
-                const senderDisplay = isIncognito 
-                    ? '🔒 Incognito Sender' 
-                    : (email.from_nexmail || `${email.from_username}◆nexmail.diamond`);
+                const isExternal = email.is_external === 1 || email.is_external === true;
+                const senderDisplay = isIncognito
+                    ? '🔒 Incognito Sender'
+                    : (isExternal
+                        ? (email.from_email || 'External Sender')
+                        : (email.from_nexmail || `${email.from_username}◆nexmail.diamond`));
                 const isNexmailAddress = senderDisplay.includes('◆') || senderDisplay.includes('@');
+                const externalBadge = isExternal
+                    ? '<span style="background: rgba(33, 150, 243, 0.25); padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px;">📩 External</span>'
+                    : '';
+                const displayDate = email.sent_at || email.received_at;
                 
                 return `
                     <div class="mail-item" style="padding: 15px; margin-bottom: 10px; background: rgba(220, 20, 60, 0.1); border-left: 3px solid var(--red-diamond); border-radius: 8px; cursor: pointer;">
@@ -2661,11 +2678,12 @@ class BankApp {
                                         ${isNexmailAddress ? '💎' : ''} ${senderDisplay}
                                     </strong>`
                                 }
+                                ${externalBadge}
                             </div>
-                            <span style="color: #888; font-size: 12px;">${new Date(email.sent_at).toLocaleDateString()}</span>
+                            <span style="color: #888; font-size: 12px;">${new Date(displayDate).toLocaleDateString()}</span>
                         </div>
                         <div style="font-weight: bold; margin-bottom: 5px;">${email.subject}</div>
-                        <div style="color: #aaa; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${email.body}</div>
+                        <div style="color: #aaa; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${email.body || '(No content)'}</div>
                     </div>
                 `;
             }).join('');

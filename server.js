@@ -1279,20 +1279,70 @@ app.get('/api/mail/inbox', (req, res) => {
         return res.status(400).json({ error: 'User ID required' });
     }
 
-    db.all(
-        `SELECT m.*, u.username as from_username 
-         FROM mail m 
-         LEFT JOIN users u ON m.from_user_id = u.id 
-         WHERE m.to_user_id = ? OR m.to_nexmail = (SELECT username || '◆nexmail.diamond' FROM users WHERE id = ?)
-         ORDER BY m.sent_at DESC`,
-        [userId, userId],
-        (err, emails) => {
-            if (err) {
-                return res.status(500).json({ error: 'Failed to fetch inbox' });
-            }
-            res.json(emails);
+    db.get('SELECT username FROM users WHERE id = ?', [userId], (userErr, user) => {
+        if (userErr) {
+            return res.status(500).json({ error: 'Failed to fetch user profile' });
         }
-    );
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        db.all(
+            `SELECT m.*, u.username as from_username 
+             FROM mail m 
+             LEFT JOIN users u ON m.from_user_id = u.id 
+             WHERE m.to_user_id = ? OR m.to_nexmail = (SELECT username || '◆nexmail.diamond' FROM users WHERE id = ?)
+             ORDER BY m.sent_at DESC`,
+            [userId, userId],
+            (err, internalEmails) => {
+                if (err) {
+                    return res.status(500).json({ error: 'Failed to fetch inbox' });
+                }
+
+                db.all(
+                    'SELECT id, from_email, to_email, subject, body, received_at FROM incoming_emails ORDER BY received_at DESC LIMIT 200',
+                    [],
+                    (incomingErr, incomingEmails) => {
+                        if (incomingErr) {
+                            return res.status(500).json({ error: 'Failed to fetch incoming emails' });
+                        }
+
+                        const username = (user.username || '').toLowerCase();
+                        const userNexmailAddress = `${username}◆nexmail.diamond`;
+
+                        const matchedIncoming = (incomingEmails || [])
+                            .filter((email) => {
+                                const toField = String(email.to_email || '').toLowerCase();
+                                const parsedRecipient = parseNexmailAddress(toField).toLowerCase();
+                                return toField.includes(userNexmailAddress) || parsedRecipient === username;
+                            })
+                            .map((email) => ({
+                                id: `incoming-${email.id}`,
+                                from_user_id: null,
+                                from_username: null,
+                                from_nexmail: null,
+                                to_user_id: Number(userId),
+                                to_username: user.username,
+                                to_nexmail: generateNexmailAddress(user.username),
+                                subject: email.subject || '(No subject)',
+                                body: email.body || '',
+                                incognito: 0,
+                                sent_at: email.received_at,
+                                received_at: email.received_at,
+                                is_external: true,
+                                from_email: email.from_email || 'unknown@external'
+                            }));
+
+                        const combined = [...internalEmails, ...matchedIncoming].sort(
+                            (a, b) => new Date(b.sent_at || b.received_at) - new Date(a.sent_at || a.received_at)
+                        );
+
+                        res.json(combined);
+                    }
+                );
+            }
+        );
+    });
 });
 
 // Get Stripe publishable key
