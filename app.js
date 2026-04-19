@@ -54,11 +54,11 @@ class BankApp {
         return `${this.apiBase}${path}`;
     }
 
-    async safeJson(res) {
+    async safeJson(res, url) {
         const ct = res.headers.get('content-type') || '';
         if (!ct.includes('application/json')) {
-            const preview = await res.text().then(t => t.slice(0, 80)).catch(() => '');
-            throw new Error(`Expected JSON but got HTML (${res.status}). Is the server running at ${this.apiBase || 'localhost:3000'}? Preview: ${preview}`);
+            const preview = await res.text().then(t => t.slice(0, 120).trim()).catch(() => '');
+            throw new Error(`Server at ${url || res.url || this.apiBase || window.location.origin} returned ${res.status} (not JSON). Is the server running? Preview: ${preview}`);
         }
         return res.json();
     }
@@ -2706,8 +2706,9 @@ class BankApp {
             return;
         }
         try {
-            const res = await this.apiFetch(`/api/mail/inbox?userId=${userId}`);
-            const data = await this.safeJson(res);
+            const path = `/api/mail/inbox?userId=${userId}`;
+            const res = await this.apiFetch(path);
+            const data = await this.safeJson(res, this.apiUrl(path));
             if (!res.ok) {
                 list.innerHTML = `<div class="email-empty-list">${data.error || 'Could not load inbox.'}</div>`;
                 return;
@@ -2723,7 +2724,7 @@ class BankApp {
             if (badge) { badge.textContent = emails.length; badge.style.display = ''; }
         } catch (e) {
             console.error('loadInbox error:', e);
-            list.innerHTML = `<div class="email-empty-list">Failed to load inbox: ${e.message}</div>`;
+            list.innerHTML = `<div class="email-empty-list">${e.message}</div>`;
         }
     }
 
@@ -2736,8 +2737,9 @@ class BankApp {
             return;
         }
         try {
-            const res = await this.apiFetch(`/api/mail/sent?userId=${userId}`);
-            const data = await this.safeJson(res);
+            const path = `/api/mail/sent?userId=${userId}`;
+            const res = await this.apiFetch(path);
+            const data = await this.safeJson(res, this.apiUrl(path));
             if (!res.ok) {
                 list.innerHTML = `<div class="email-empty-list">${data.error || 'Could not load sent mail.'}</div>`;
                 return;
@@ -2751,7 +2753,7 @@ class BankApp {
             emails.forEach(email => list.appendChild(this._buildListItem(email, true)));
         } catch (e) {
             console.error('loadSentMail error:', e);
-            list.innerHTML = `<div class="email-empty-list">Failed to load sent mail: ${e.message}</div>`;
+            list.innerHTML = `<div class="email-empty-list">${e.message}</div>`;
         }
     }
 

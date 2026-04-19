@@ -1,10 +1,11 @@
-[dotenv@17.2.3] injecting env (8) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+
+> red-diamond-bank@1.0.0 start
+> node server.js
+
+[dotenv@17.2.3] injecting env (8) from .env -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
 Email service configured (Resend API)
 ✅ Stripe payment processing enabled
 🏦 Red Diamond Bank server running on http://localhost:3000
 💎 Currency: Red Diamonds ◆
 Connected to SQLite database
 Database tables initialized
-Marketing email sent to maxvbuda@gmail.com (Max)
-Marketing email sent to mvachharajani@gmail.com (mxv)
-Marketing email campaign completed: 2 sent, 0 failed
