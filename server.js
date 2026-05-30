@@ -85,6 +85,9 @@ app.use(bodyParser.urlencoded({ extended: true })); // For webhook form data
 // All other website features (mail, shop, purchases) continue to use SQLite.
 const mongoBanking = require('./mongo-banking');
 app.use('/api', mongoBanking);
+
+const mongoExtras = require('./mongo-extras');
+app.use('/api', mongoExtras);
 // Never cache JS/CSS/HTML so browsers always get the latest code
 app.use((req, res, next) => {
     if (/\.(js|css|html)$/.test(req.path)) {
