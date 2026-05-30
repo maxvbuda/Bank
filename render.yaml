@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: reddiamondbank-web
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /favicon.ico
+    envVars:
+      # Same MongoDB URI as the reddiamondbank-api service — this is what syncs them.
+      - key: MONGODB_URI
+        sync: false
+      # Disable the built-in HTTPS — Render handles TLS for you.
+      - key: USE_HTTPS
+        value: "false"
+      # Email settings (copy from your other service if you want emails to work).
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_PORT
+        value: "587"
+      - key: RESET_SECRET
+        sync: false
